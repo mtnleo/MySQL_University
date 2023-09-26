@@ -62,6 +62,13 @@ CREATE TABLE prestamoXvolumen (
 
 );
 
+CREATE TABLE telefonoxsocio (
+	codigo_telefonoxsocio int AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    telefono VARCHAR(100),
+    codigo_socio int NOT NULL,
+    CONSTRAINT fk_socio_telefono FOREIGN KEY (codigo_socio) REFERENCES socio (codigo_socio)
+);
+
 /* DROP PARA CONTROLAR */
 drop table libro;
 drop table autor;

@@ -1,0 +1,14 @@
+
+Creación de la base de datos y las tablas:
+
+1. Crear un schema de base de datos llamado “UniversoLector”.
+
+2. Crear las tablas del modelo relacional.
+
+2. A Por cada tabla, crear las columnas y asignar el tipo de datos más adecuado.
+
+2. B Crear la clave primaria de cada tabla.
+
+2. C Agregar las claves foráneas de relación.
+
+3. Mediante ingeniería inversa, generar el DER de la base de datos “Universo lector” dentro de Workbench o en papel.
