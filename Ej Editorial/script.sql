@@ -69,6 +69,8 @@ CREATE TABLE telefonoxsocio (
     CONSTRAINT fk_socio_telefono FOREIGN KEY (codigo_socio) REFERENCES socio (codigo_socio)
 );
 
+
+
 /* DROP PARA CONTROLAR */
 drop table libro;
 drop table autor;
