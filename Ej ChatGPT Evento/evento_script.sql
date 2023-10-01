@@ -82,6 +82,35 @@ CREATE TABLE CostoXEvento (
     CONSTRAINT fk_evento_costo_evento FOREIGN KEY (id_evento) REFERENCES Eventos (id_evento),
     CONSTRAINT fk_recurso_evento_costo_evento FOREIGN KEY (id_recurso_evento) REFERENCES RecursoXEvento (id_recurso_evento),
     CONSTRAINT fk_personal_evento_costo_evento FOREIGN KEY (id_personal_evento) REFERENCES PersonalXEvento (id_personal_evento)
-
-
 );
+
+/* ||||||||||||||||||||||||||||||||||||||||||| */
+-- -------------- PRACTICA DDL --------------- --
+/* ||||||||||||||||||||||||||||||||||||||||||| */
+
+INSERT INTO participantes (nombre, apellido, telefono, email)
+VALUES ("martin", "leon", "223598888", "mtnleonardi@gmail.com"),
+("eze", "leon", "223598882", "eze@mail.com");
+
+SELECT * FROM participantes;
+
+INSERT INTO actividades (nombre) VALUES ("Ping Pong"), ("Futbol"), ("Charla TED");
+
+SELECT * FROM actividades;
+
+UPDATE actividades SET nombre = "Ping-Pong" WHERE id_actividad = (SELECT id_actividad FROM actividades WHERE nombre LIKE ("PING%"));
+
+ALTER TABLE participantes ADD edad TINYINT;
+
+UPDATE participantes SET edad = 19
+WHERE id_participante = (SELECT id_participante FROM participantes WHERE email LIKE "%MTNLEO%");
+
+UPDATE participantes SET edad = 24
+WHERE id_participante = 2;
+
+
+INSERT INTO recursos (nombre, costo_hora) VALUES ("Payaso", 180), ("Public Speaker", 590);
+
+SELECT * FROM recursos;
+
+ALTER TABLE recursos DROP costo_hora;

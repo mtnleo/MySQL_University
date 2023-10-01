@@ -90,6 +90,12 @@ asistencias,
 minutos, faltas) VALUES
 (1,3,8,9,9,90,9), (2,3,8,7,15,46,9),(3,3,6,7,15,90,7),(4,1,2,9,9,90,8), (5,3,6,8,56,85,12),
 (6,6,8,8,5,15,1), (7,4,8,17,4,90,5), (8,6,5,9,5,45,6), (9,4,5,6,9,90,3);
+
+-- Más practica
+
+UPDATE equipos SET nombre_equipo = "Boca Junior" WHERE id_equipo = (SELECT id_equipo FROM equipos WHERE nombre_equipo LIKE "BOCA");
+UPDATE equipos SET nombre_equipo = "River Plate" WHERE id_equipo = (SELECT id_equipo FROM equipos WHERE nombre_equipo LIKE "RIV%");
+
 /* HARDCODE DIRECTO DE LA GUIA -------------------------------
 */
 -- 1 - Listar los jugadores y a que equipo pertenecen (nombre, apellido, nombre_equipo).
