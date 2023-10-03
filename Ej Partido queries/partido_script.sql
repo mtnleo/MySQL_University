@@ -99,12 +99,20 @@ UPDATE equipos SET nombre_equipo = "River Plate" WHERE id_equipo = (SELECT id_eq
 /* HARDCODE DIRECTO DE LA GUIA -------------------------------
 */
 -- 1 - Listar los jugadores y a que equipo pertenecen (nombre, apellido, nombre_equipo).
+SELECT j.nombre_jugador, j.apellido, e.nombre_equipo
+FROM jugadores AS j
+JOIN equipos AS e ON j.id_equipo = e.id_equipo;
+
 SELECT jugadores.nombre_jugador, jugadores.apellido, equipos.nombre_equipo
 FROM jugadores
 JOIN equipos ON jugadores.id_equipo = equipos.id_equipo
 ORDER BY jugadores.apellido;
 
 -- 2 - Listar los equipos cuyo nombre comience con la letra P.
+SELECT e.nombre_equipo
+FROM equipos AS e
+WHERE e.nombre_equipo LIKE ("P%");
+
 SELECT *
 FROM equipos AS e
 WHERE e.nombre_equipo LIKE "P%";
@@ -112,11 +120,24 @@ WHERE e.nombre_equipo LIKE "P%";
 -- 3 - Listar los jugadores que pertenezcan a un equipo que contenga una “Atletico” o “Atlética” en su nombre (Por ej : Atletico Tucuman o Asociacion Atletica Patronato”)
 SELECT j.nombre_jugador, j.apellido, e.nombre_equipo
 FROM jugadores AS j
+JOIN equipos AS e ON j.id_equipo = e.id_equipo
+WHERE e.nombre_equipo LIKE ("%atletico%") OR e.nombre_equipo LIKE ("%atletica%");
+
+
+SELECT j.nombre_jugador, j.apellido, e.nombre_equipo
+FROM jugadores AS j
 JOIN equipos as e ON j.id_equipo = e.id_equipo
 WHERE e.nombre_equipo LIKE "%atletica%" OR e.nombre_equipo LIKE "%atletico%"
 ORDER BY e.nombre_equipo DESC;
 
 -- 4 - Listar los jugadores y su equipo siempre y cuando el jugador haya jugado al menos un partido.
+SELECT j.nombre_jugador, j.apellido, COUNT(jxexp.id_partido) AS "Partidos Jugados"
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON j.id_jugador = jxexp.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+HAVING COUNT(jxexp.id_partido) > 0; 
+
+
 SELECT j.nombre_jugador, j.apellido, e.nombre_equipo, jxexp.minutos
 FROM jugadores AS j
 JOIN equipos AS e ON j.id_equipo = e.id_equipo
@@ -124,24 +145,53 @@ JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
 WHERE jxexp.minutos > 0;
 
 -- 5 - Listar los partidos con su fecha y los nombres de los equipos local y visitante.
+SELECT p.fecha, e1.nombre_equipo AS "Local", e2.nombre_equipo AS "Visitante"
+FROM partidos AS p
+JOIN equipos AS e1 ON p.id_equipo_local = e1.id_equipo
+JOIN equipos AS e2 ON p.id_equipo_visitante = e2.id_equipo
+ORDER BY p.fecha DESC;
+
+
 SELECT p.fecha, e_l.nombre_equipo, e_v.nombre_equipo
 FROM partidos AS p
 JOIN equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
 JOIN equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo; 
 
 -- 6 - Listar los equipos y la cantidad de jugadores que tiene.
+SELECT e.nombre_equipo, COUNT(j.id_equipo) AS "Jugadores"
+FROM equipos AS e
+JOIN jugadores AS j ON e.id_equipo = j.id_equipo
+GROUP BY e.nombre_equipo
+ORDER BY COUNT(j.id_equipo);
+
+
 SELECT e.nombre_equipo, COUNT(j.id_equipo)
 FROM equipos AS e
 JOIN jugadores AS j ON e.id_equipo = j.id_equipo
 GROUP BY e.nombre_equipo;
 
 -- 7 - Listar los jugadores y la cantidad de partidos que jugó.
+SELECT j.nombre_jugador, j.apellido, COUNT(jxexp.id_partido) AS "Partidos Jugados"
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON j.id_jugador = jxexp.id_jugador
+GROUP BY j.nombre_jugador, j.apellido;
+
+
 SELECT j.nombre_jugador, j.apellido, COUNT(jxexp.id_jugador) as Cant_Partidos
 FROM jugadores AS j
 JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
 GROUP BY j.id_jugador;
 
+
+
 -- 8 - Elaborar un ranking con los jugadores que más puntos hicieron en el torneo
+SELECT j.nombre_jugador, j.apellido, SUM(jxexp.puntos) AS "Puntos hechos"
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+ORDER BY SUM(jxexp.puntos) DESC;
+
+
 SELECT j.nombre_jugador, j.apellido, SUM(jxexp.puntos) AS puntos_totales
 FROM jugadores AS j
 JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
@@ -149,6 +199,13 @@ GROUP BY j.nombre_jugador, j.apellido
 ORDER BY SUM(jxexp.puntos) DESC;
 
 -- 9 - Elaborar un ranking con los jugadores que más promedio de puntos tienen en el torneo.
+SELECT j.nombre_jugador, j.apellido, AVG(jxexp.puntos) AS "Promedio puntos"
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+ORDER BY AVG(jxexp.puntos) DESC;
+
+
 SELECT j.nombre_jugador, j.apellido, AVG(jxexp.puntos) AS Prom_puntos
 FROM jugadores AS j
 JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
@@ -156,6 +213,15 @@ GROUP BY j.nombre_jugador, j.apellido
 ORDER BY AVG(jxexp.puntos) DESC;
 
 -- 10 - Para cada jugador, mostrar la fecha del primer y último partido que jugó
+SELECT j.nombre_jugador, j.apellido, MIN(p.fecha) AS "Primer Partido", MAX(p.fecha) AS "Ultimo Partido"
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
+JOIN partidos AS p ON jxexp.id_partido = p.id_partido
+GROUP BY j.nombre_jugador, j.apellido;
+
+
+
+
 SELECT j.nombre_jugador, j.apellido, jxexp.id_partido, MIN(p.fecha) AS primera_fecha, MAX(p.fecha) AS ultima_fecha
 FROM jugadores as j
 JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
@@ -163,6 +229,12 @@ JOIN partidos AS p ON p.id_partido = jxexp.id_partido
 GROUP BY j.nombre_jugador, j.apellido;
 
 -- 11 - Listar los equipos que tengan registrados mas de 10 jugadores
+SELECT e.nombre_equipo, COUNT(j.id_equipo) AS "Cantidad Jugadores"
+FROM equipos AS e
+JOIN jugadores AS j ON e.id_equipo = j.id_equipo
+GROUP BY e.nombre_equipo
+HAVING COUNT(j.id_equipo) > 10;
+
 SELECT e.nombre_equipo, COUNT(j.id_jugador) AS cant_jugadores
 FROM equipos AS e
 JOIN jugadores AS j ON e.id_equipo = j.id_equipo
@@ -170,6 +242,13 @@ GROUP BY e.nombre_equipo
 HAVING COUNT(j.id_jugador) > 10;
 
 -- 12 - Listar los jugadores que hayan jugado más de 5 partidos y promediado más de 10 puntos por partido. *
+SELECT j.nombre_jugador, j.apellido, COUNT(jxexp.id_partido), AVG(jxexp.puntos)
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+HAVING COUNT(jxexp.id_partido) > 1 AND AVG(jxexp.puntos) > 4;
+
+
 SELECT j.nombre_jugador, j.apellido, AVG(jxexp.puntos) AS promedio_puntos, COUNT(jxexp.id_jugador) AS partidos
 FROM jugadores AS j
 JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
@@ -180,6 +259,13 @@ ORDER BY AVG(jxexp.puntos) desc;
 
 -- 13 - Listar los jugadores que en promedio tengan más de 10 puntos , 10 asistencias y 10 rebotes por partido.
 /*INGRESAR MAS INFO PARA HACER EL HAVING CON LA INFO QUE SE PIDE*/
+SELECT j.nombre_jugador, j.apellido, AVG(jxexp.puntos) AS puntos, AVG(jxexp.asistencias) AS asistencias, AVG(jxexp.rebotes) as rebotes
+FROM jugadores AS j
+JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+HAVING AVG(jxexp.puntos) > 5 AND AVG(jxexp.asistencias) > 5 AND AVG(jxexp.rebotes) > 5;
+
+
 SELECT j.nombre_jugador, j.apellido, AVG(jxexp.puntos) AS prom_puntos, AVG(jxexp.asistencias) AS prom_asist, AVG(jxexp.rebotes) AS prom_rebotes
 FROM jugadores as j
 JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
