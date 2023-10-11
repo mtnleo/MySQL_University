@@ -38,6 +38,12 @@ INSERT INTO telefonos (marca, modelo, precio, id_empresa) VALUES
 ("Xiaomi", "Mi 12 Pro", 1250, 3),
 ("Xiaomi", "Mi 12 Pro", 1250, 2);
 
+ALTER TABLE empresas ADD pais_origen VARCHAR(20);
+
+UPDATE empresas SET pais_origen = "España" WHERE id_empresa = (SELECT id_empresa FROM empresas WHERE razon_social LIKE ("%ESPAÑA%") AND nombre LIKE ("%C%"));
+UPDATE empresas SET pais_origen = "España" WHERE id_empresa = (SELECT id_empresa FROM empresas WHERE razon_social LIKE ("%ESPAÑA%") AND nombre LIKE ("%P%"));
+UPDATE empresas SET pais_origen = "Argentina" WHERE id_empresa = (SELECT id_empresa FROM empresas WHERE nombre LIKE ("%CLARO%"));
+
 /* -------------------------
 			Queries
    ------------------------- */
@@ -70,3 +76,9 @@ FROM telefonos AS t
 JOIN empresas AS e ON t.id_empresa = e.id_empresa
 WHERE e.razon_social LIKE ("%Personal España%") AND t.precio > 400 AND t.marca NOT LIKE ("%X%")
 ORDER BY t.marca ASC;
+
+-- Ver de que pais son las empresas que venden celulares arriba de 800usd
+SELECT t.modelo, t.precio, e.pais_origen  
+FROM telefonos AS t
+JOIN empresas AS e ON t.id_empresa = e.id_empresa
+WHERE t.precio > 800;
