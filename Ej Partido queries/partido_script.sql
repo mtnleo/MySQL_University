@@ -286,3 +286,114 @@ JOIN partidos AS p ON e.id_equipo = p.id_equipo_local
 GROUP BY e.nombre_equipo
 HAVING COUNT(p.id_equipo_local) >= 2;
 
+
+
+/********************************************************************
+---------------------------------------------------------------------
+||||||||||||||||| GUIA PROCEDIMIENTOS ALMACENADOS |||||||||||||||||||
+*********************************************************************
+---------------------------------------------------------------------*/
+
+-- -----------------------------------------------------------------
+-- 1. Generar un Stored Procedure que permite ingresar un equipo. --
+-- -----------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE ingresar_equipo(IN nombre_equipo_ingresado VARCHAR(40))
+COMMENT "Agregar un equipo a la tabla"
+BEGIN
+IF NOT EXISTS (
+	SELECT e.nombre_equipo
+    FROM Equipos AS e
+    WHERE nombre_equipo_ingresado LIKE e.nombre_equipo
+)
+THEN
+	INSERT INTO Equipos (nombre_equipo) VALUES (nombre_equipo_ingresado);
+ELSE
+	SELECT("El equipo ya existe");
+END IF;
+END//
+DELIMITER ;
+
+CALL ingresar_equipo("River Plate"); -- Está en la tabla
+CALL ingresar_equipo("Excursionistas"); -- No está en la tabla
+
+-- MOSTRAR TODOS LOS EQUIPOS
+SELECT e.nombre_equipo
+FROM Equipos AS e;
+
+-- --------------------------------------------------------------------------------------------------------------------
+-- 2. Generar un Stored Procedure que permita agregar un jugador pero se debe pasar el nombre del equipo y no el Id. --
+-- --------------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE agregar_jugador(nombre_equipo_agregar VARCHAR(40), nombre_jugador_agregar VARCHAR(40), apellido_jugador_agregar VARCHAR(40))
+COMMENT "Agregar un jugador a la tabla"
+BEGIN
+	-- Chequeo si existe el equipo
+	IF NOT EXISTS (
+		SELECT e.nombre_equipo
+        FROM Equipos AS e
+        WHERE e.nombre_equipo LIKE nombre_equipo_agregar)
+	THEN
+		CALL ingresar_equipo(nombre_equipo_agregar);
+	END IF;
+	
+    -- No chequeo si existe el jugador porque puede que existan dos con el mismo nombre/apellido
+	INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
+    VALUES (
+    (SELECT e.id_equipo
+    FROM Equipos AS e
+    WHERE e.nombre_equipo LIKE nombre_equipo_agregar), nombre_jugador_agregar, apellido_jugador_agregar);
+END//
+DELIMITER ;
+
+DROP PROCEDURE agregar_jugador;
+
+CALL agregar_jugador("River Plate", "Fernando", "Cavenaghi"); -- El equipo existe
+CALL agregar_jugador("Real Madrid", "Facundo", "Campazzo"); -- El equipo no existe
+CALL agregar_jugador("Patronato", "Julian", "Dominguez"); -- El equipo existe
+
+-- Mostrar jugadores y sus equipos
+SELECT j.nombre_jugador, j.apellido, e.nombre_equipo
+FROM Jugadores AS j
+JOIN Equipos AS e ON j.id_equipo = e.id_equipo
+ORDER BY e.nombre_equipo;
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+-- 3. Generar un Stored Procedure que permita dar de alta un equipo y sus jugadores. Devolver en un parámetro output el id del equipo.. --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+-- Es muy parecido al que hice en el 2 pero ahora tengo que devolver el ID del equipo.
+DELIMITER //
+CREATE PROCEDURE agregar_jugador_equipo(nombre_equipo_agregar VARCHAR(40), nombre_jugador_agregar VARCHAR(40), apellido_jugador_agregar VARCHAR(40), OUT id_equipo_out INT)
+COMMENT "Agregar un jugador y un equipo a la tabla"
+BEGIN
+	-- Chequeo si existe el equipo
+	IF NOT EXISTS (
+		SELECT e.nombre_equipo
+        FROM Equipos AS e
+        WHERE e.nombre_equipo LIKE nombre_equipo_agregar)
+	THEN
+		CALL ingresar_equipo(nombre_equipo_agregar);
+	END IF;
+	
+    -- No chequeo si existe el jugador porque puede que existan dos con el mismo nombre/apellido
+    SET id_equipo_out = (SELECT e.id_equipo
+    FROM Equipos AS e
+    WHERE e.nombre_equipo LIKE nombre_equipo_agregar);
+    
+	INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
+    VALUES (id_equipo_out, nombre_jugador_agregar, apellido_jugador_agregar);
+END//
+DELIMITER ;
+
+CALL agregar_jugador_equipo("Dallas Mavericks", "Luka", "Doncic", @equipo_retorno); 
+SELECT @equipo_retorno;
+CALL agregar_jugador_equipo("Boston Celtics", "Jason", "Tatum", @equipo_retorno);
+SELECT @equipo_retorno;
+CALL agregar_jugador_equipo("Boston Celtics", "Al", "Horford", @equipo_retorno); 
+SELECT @equipo_retorno;
+CALL agregar_jugador_equipo("Boston Celtics", "Jaylen", "Brown", @equipo_retorno);
+SELECT @equipo_retorno;
+CALL agregar_jugador_equipo("Denver Nuggets", "Nikola", "Jokic", @equipo_retorno); 
+SELECT @equipo_retorno;
