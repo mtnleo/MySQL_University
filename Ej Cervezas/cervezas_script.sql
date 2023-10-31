@@ -173,3 +173,34 @@ FROM Recetas AS r
 JOIN IngredienteXRecetas AS i_x_r ON i_x_r.IdReceta = r.IdReceta
 GROUP BY r.NombreReceta
 HAVING COUNT(i_x_r.IdIngrediente) = 0;
+
+-- ------------------------------------------------------------
+-- SUBQUERIES -------------------------------------------------
+-- ------------------------------------------------------------
+
+-- 1. Mostrar el nombre del ingrediente del que mas cantidad haya.
+SELECT i.NombreIngrediente, COUNT(ixr.IdIngredienteReceta)
+FROM ingredientes AS i
+JOIN IngredienteXRecetas AS ixr ON ixr.IdIngrediente = i.IdIngrediente
+GROUP BY i.NombreIngrediente
+ORDER BY COUNT(ixr.IdIngredienteReceta) DESC
+LIMIT 1;
+
+-- 2. Mostrar las Recetas que contengan un numero igual o menor al promedio total.
+SELECT r.*, AVG(i_x_r.IdIngrediente) PROMEDIO_ING
+FROM recetas AS r
+JOIN IngredienteXRecetas AS i_x_r ON i_x_r.IdReceta = r.IdReceta
+GROUP BY r.IdReceta
+HAVING AVG(i_x_r.IdIngrediente) <= (SELECT AVG(i_x_r.IdIngrediente) FROM IngredienteXRecetas AS i_x_r);
+
+-- 3. Mostrar las Recetas que contengan en si, los primeros 3 ingredientes.
+
+
+-- 4. Listar las Cervezas que en su Receta contengan la mayor cantidad de Ingredientes.
+
+
+-- 5. Mostrar las Receta con el ID 3, junto con la cantidad de Ingredientes que posee y en otra columna el promedio de ingredientes General.
+
+
+-- 6. Mostrar las Recetas que superen el Promedio de ingredientes general (Simular Having).
+

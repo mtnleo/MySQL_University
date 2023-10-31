@@ -78,7 +78,7 @@ WHERE e.razon_social LIKE ("%Personal España%") AND t.precio > 400 AND t.marca 
 ORDER BY t.marca ASC;
 
 -- Ver de que pais son las empresas que venden celulares arriba de 800usd
-SELECT t.modelo, t.precio, e.pais_origen  
+SELECT t.modelo, t.precio, e.razon_social, e.pais_origen  
 FROM telefonos AS t
 JOIN empresas AS e ON t.id_empresa = e.id_empresa
 WHERE t.precio > 800;
