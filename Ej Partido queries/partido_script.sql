@@ -78,6 +78,10 @@ INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha)
 VALUES (1, 2, '2018-11-01'), (3, 4, '2018-11-02'),
 (1, 3, '2018-11-03'), (2, 4, '2018-11-04'),
 (1, 4, '2018-11-05'), (2, 3, '2018-11-06');
+INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha)
+VALUES (1, 2, '2023-04-01'), (3, 4, '2023-12-02'),
+(1, 3, '2023-10-03'), (2, 4, '2023-11-04'),
+(1, 4, '2023-11-05'), (2, 3, '2023-11-06');
 
 INSERT INTO jugadores_x_equipo_x_partido(id_jugador, id_partido, puntos, rebotes,
 asistencias,
@@ -397,3 +401,88 @@ CALL agregar_jugador_equipo("Boston Celtics", "Jaylen", "Brown", @equipo_retorno
 SELECT @equipo_retorno;
 CALL agregar_jugador_equipo("Denver Nuggets", "Nikola", "Jokic", @equipo_retorno); 
 SELECT @equipo_retorno;
+
+-- ----------------------------------------------------------------------------------------------
+-- 4. Generar un Stored Procedure que liste los partidos de un mes y año, pasado por parametro.--
+-- ----------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE show_partidos_mes_anio(mes_target INT, anio_target INT)
+BEGIN
+	SELECT e_l.nombre_equipo AS Equipo_Local, e_v.nombre_equipo AS Equipo_Visitante, p.fecha AS Fecha
+    FROM Partidos AS p
+    JOIN Equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
+    JOIN Equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo
+    WHERE date_format(p.fecha, '%Y-%m') = CONCAT(anio_target, '-', LPAD(mes_target, 2, '0')) -- Combina año y mes en el formato 'YYYY-MM'
+    ORDER BY p.fecha DESC;
+END// 
+DELIMITER ;
+
+-- DROP PROCEDURE show_partidos_mes_anio;
+
+CALL show_partidos_mes_anio(11, 2023);
+CALL show_partidos_mes_anio(10, 2023);
+
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- 5. Generar un Stored Procedure que devuelva el resultado de un partido pasando por parámetro los nombres de los equipos. El resultado debe ser devuelto en dos variables output --
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE devolver_resultado_partido(nombre_equipo_local VARCHAR(40), nombre_equipo_visitante VARCHAR(40), OUT resultado_local INT, OUT resultado_visitante INT)
+BEGIN
+	IF EXISTS (SELECT e_l.nombre_equipo, e_v.nombre_equipo
+		FROM Partidos AS p
+		JOIN Equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
+		JOIN Equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo)
+    THEN
+		SET resultado_local =   (SELECT SUM(jxexp.puntos)
+								FROM Partidos AS p
+								JOIN Equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
+								JOIN Equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo
+                                JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_partido = p.id_partido
+                                WHERE e_l.nombre_equipo LIKE nombre_equipo_local
+                                GROUP BY e_l.id_equipo
+                                );
+		SET resultado_visitante =   (SELECT SUM(jxexp.puntos)
+									FROM Partidos AS p
+									JOIN Equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
+									JOIN Equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo
+									JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_partido = p.id_partido
+                                    WHERE e_v.nombre_equipo LIKE nombre_equipo_visitante
+									GROUP BY e_v.id_equipo
+                                    
+                                );
+    ELSE
+		SELECT("No existe un partido entre esos dos equipos");
+	END IF;
+END//
+DELIMITER ;
+
+-- DROP PROCEDURE devolver_resultado_partido;
+
+CALL devolver_resultado_partido("River Plate", "San Lorenzo", @resultado_local, @resultado_visitante);
+SELECT @resultado_local AS "River Plate", @resultado_visitante AS "San Lorenzo";
+
+CALL devolver_resultado_partido("River Plate", "Boca Junior", @resultado_local, @resultado_visitante);
+SELECT @resultado_local AS "River Plate", @resultado_visitante AS "Boca Junior";
+
+-- ------------------------------------------------------------------------------------------------------
+-- 6. Generar un stored procedure que muestre las estadisticas promedio de los jugadores de un equipo. --
+-- ------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE mostrar_estadisticas_jugadores(nombre_equipo_mostrar VARCHAR(40))
+BEGIN
+	SELECT j.nombre_jugador, j.apellido, AVG(jxexp.puntos) AS PUNTOS, AVG(jxexp.rebotes) AS REBOTES, AVG(jxexp.minutos) AS MINUTOS, AVG(jxexp.asistencias) AS ASISTENCIAS, AVG(jxexp.faltas) AS FALTAS
+    FROM Equipos AS e
+    JOIN Jugadores AS j ON j.id_equipo = e.id_equipo
+    JOIN jugadores_x_equipo_x_partido AS jxexp ON jxexp.id_jugador = j.id_jugador
+    WHERE e.nombre_equipo LIKE nombre_equipo_mostrar
+    GROUP BY j.nombre_jugador, j.apellido;
+END //
+DELIMITER ;
+
+-- DROP PROCEDURE mostrar_estadisticas_jugadores;
+
+CALL mostrar_estadisticas_jugadores("River Plate");
+CALL mostrar_estadisticas_jugadores("Boca Junior");
