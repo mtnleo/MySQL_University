@@ -151,20 +151,20 @@ VALUES
     ('2023-10-06 13:45:00', 2), -- Reserva 6, Einstein
     ('2023-10-07 15:20:00', 3); -- Reserva 7, CADS}    
     
-INSERT INTO visitas (grado, cant_alumnos, asistencia, arancel)
+INSERT INTO visitas (grado, cant_alumnos, asistencia, arancel, id_tipo_visita)
 VALUES
-    (5, 30, 25, 200),
-    (6, 40, 38, 150),
-    (4, 20, 18, 100), 
-    (5, 30, 25, 200), 
-    (6, 40, 38, 150),
-    (4, 20, 18, 100),
-    (5, 30, 25, 200),
-    (6, 40, 38, 150),
-    (4, 20, 18, 100), 
-    (5, 30, 25, 200),
-    (6, 40, 38, 150),
-    (4, 20, 18, 100); 
+    (5, 30, 25, 200, 1),
+    (6, 40, 38, 150, 2),
+    (4, 20, 18, 100, 3), 
+    (5, 30, 25, 200, 4), 
+    (6, 40, 38, 150, 4),
+    (4, 20, 18, 100, 4),
+    (5, 30, 25, 200, 1),
+    (6, 40, 38, 150, 1),
+    (4, 20, 18, 100, 2), 
+    (5, 30, 25, 200, 2),
+    (6, 40, 38, 150, 3),
+    (4, 20, 18, 100, 2); 
     
 -- Llenar la tabla "visitasguias" con datos ficticios, utilizando el nombre del guía como responsable
 INSERT INTO visitasguias (responsable)
@@ -264,5 +264,16 @@ SELECT e.id_escuela, e.nombre, (SELECT IFNULL(count(*),0) FROM reservas AS r WHE
 FROM escuelas AS e;
 
 -- 3. Para cada Tipo de Visita, listar el nombre y obtener con una subconsulta como tabla derivada la cantidad de Reservas realizadas.
-SELECT t_v.tipovisita, (SELECT COUNT(v.id_tipo_visita) FROM visitas AS v, reservas AS r WHERE v.id_reserva = r.id_reserva AND v.id_tipo_visita = t_v.id_tipo_visita)
-FROM tipovisita AS t_v;
+-- resoluc
+SELECT tv.tipovisita, cantidad
+FROM tipovisita TV
+INNER JOIN (SELECT Id_Tipo_Visita, count(*) as Cantidad
+	FROM Visitas GROUP BY Id_Tipo_Visita) Cant ON TV.Id_Tipo_Visita = Cant.Id_Tipo_Visita;
+    
+    
+-- 4. Para cada Guía, listar el nombre y obtener con una subconsulta como tabla derivada la cantidad de 
+-- Visitas en las que participó como Responsable. En caso de no haber participado en ninguna, mostrar el número cero.
+SELECT g.nombre, g.apellido, cant
+FROM guias AS g
+JOIN (SELECT v_g.id_guia, COUNT(*) AS cant
+	  FROM visitasguias AS v_g GROUP BY id_guia) cantidad ON g.id_guia = v_g.id_guia; 

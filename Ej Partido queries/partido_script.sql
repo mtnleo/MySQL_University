@@ -486,3 +486,4 @@ DELIMITER ;
 
 CALL mostrar_estadisticas_jugadores("River Plate");
 CALL mostrar_estadisticas_jugadores("Boca Junior");
+
