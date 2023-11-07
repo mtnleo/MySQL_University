@@ -108,3 +108,20 @@ WHERE EXISTS (SELECT e.codigo_departamento FROM Empleados AS e WHERE d.codigo_de
 SELECT d.nombre
 FROM Departamentos AS d
 WHERE NOT EXISTS (SELECT e.codigo_departamento FROM Empleados AS e WHERE d.codigo_departamento = e.codigo_departamento); # Es solo el departamento "Empty"
+
+
+-- -----------------------------------------------
+/* |||||||||||||| SUBQUERIES 2 |||||||||||||||| */
+-- -----------------------------------------------
+
+-- 1. Calcula la suma del presupuesto de todos los departamentos.
+SELECT SUM(presupuesto) AS suma_presupuesto
+FROM departamentos;
+
+-- 2. Calcula la media del presupuesto de todos los departamentos.
+SELECT AVG(presupuesto) AS avg_presupuesto
+FROM departamentos;
+
+-- 3. Calcula el valor mínimo del presupuesto de todos los departamentos.
+SELECT MIN(presupuesto) AS min_presupuesto
+FROM departamentos;

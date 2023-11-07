@@ -179,12 +179,17 @@ HAVING COUNT(i_x_r.IdIngrediente) = 0;
 -- ------------------------------------------------------------
 
 -- 1. Mostrar el nombre del ingrediente del que mas cantidad haya.
+/*
 SELECT i.NombreIngrediente, COUNT(ixr.IdIngredienteReceta)
 FROM ingredientes AS i
 JOIN IngredienteXRecetas AS ixr ON ixr.IdIngrediente = i.IdIngrediente
 GROUP BY i.NombreIngrediente
 ORDER BY COUNT(ixr.IdIngredienteReceta) DESC
 LIMIT 1;
+*/
+SELECT i.NombreIngrediente
+FROM Ingredientes AS i
+WHERE i.id_ingrediente = (SELECT MAX(i_x_r.IdIngrediente) FROM IngredienteXRecetas AS i_x_r);
 
 -- 2. Mostrar las Recetas que contengan un numero igual o menor al promedio total.
 SELECT r.*, AVG(i_x_r.IdIngrediente) PROMEDIO_ING
@@ -194,13 +199,90 @@ GROUP BY r.IdReceta
 HAVING AVG(i_x_r.IdIngrediente) <= (SELECT AVG(i_x_r.IdIngrediente) FROM IngredienteXRecetas AS i_x_r);
 
 -- 3. Mostrar las Recetas que contengan en si, los primeros 3 ingredientes.
-
+SELECT r.*
+FROM Recetas AS r, (SELECT IdIngrediente FROM Ingredientes LIMIT 3) AS primeros_tres_ingredientes
+JOIN  IngredienteXRecetas AS i_x_r ON r.IdReceta = i_x_r.IdReceta
+WHERE i_x_r.IdIngrediente IN (primeros_tres_ingredientes);
 
 -- 4. Listar las Cervezas que en su Receta contengan la mayor cantidad de Ingredientes.
+SELECT c.NombreCerveza
+FROM Cervezas AS c, Recetas AS r
+WHERE c.IdCerveza = r.IdCerveza AND
+	(SELECT COUNT(*) -- Cuenta los ingredientes
+     FROM IngredienteXRecetas AS ir
+     WHERE r.IdReceta = ir.IdReceta) = ( -- Compara si son iguales con los maximos
+     SELECT MAX(ingreds_receta)
+     FROM (SELECT COUNT(*) AS ingreds_receta
+		   FROM Recetas AS r
+           JOIN IngredienteXRecetas AS ir ON r.IdReceta = ir.IdReceta
+			GROUP BY r.IdReceta
+	) AS max_ingr_receta);
 
 
 -- 5. Mostrar las Receta con el ID 3, junto con la cantidad de Ingredientes que posee y en otra columna el promedio de ingredientes General.
+SELECT r.IdReceta, (SELECT COUNT(*) FROM IngredienteXRecetas AS ir JOIN Recetas AS r ON r.IdReceta = ir.IdReceta) AS Cant_ingredientes, (SELECT AVG(ingredientes_receta) FROM (SELECT COUNT(*) AS ingreds_receta
+		   FROM Recetas AS r
+           JOIN IngredienteXRecetas AS ir ON r.IdReceta = ir.IdReceta
+			GROUP BY r.IdReceta))
+FROM Recetas AS r;
+
+-- Obtener promedio de ingredientes general
+SELECT AVG(cant_ingredientes) AS Promedio_Ing
+FROM (SELECT COUNT(*) AS cant_ingredientes
+	  FROM Recetas AS r
+      JOIN IngredienteXRecetas AS ir
+      ON ir.IdReceta = r.IdReceta
+      GROUP BY ir.IdReceta) AS recetas_con_ingredientes;
+-- Obtener cant de ingredientes de las recetas
+SELECT r.IdReceta, COUNT(*) AS Cant_Ingredientes
+FROM Recetas AS r
+JOIN IngredienteXRecetas AS ir ON r.IdReceta = ir.IdReceta   
+GROUP BY r.IdReceta;
+      
+-- Toda la query con subqueries
+SELECT 
+	r.IdReceta, r.NombreReceta,
+	Cant_Ingredientes.cantidad_ingredientes,
+    Promedio_Ing.prom_ing
+    
+FROM
+	Recetas AS r, 
+    
+	(SELECT AVG(cant_ingredientes) AS prom_ing
+	 FROM (SELECT COUNT(*) AS cant_ingredientes
+	 FROM Recetas AS r
+	 JOIN IngredienteXRecetas AS ir
+	 ON ir.IdReceta = r.IdReceta
+	 GROUP BY ir.IdReceta) AS recetas_con_ingredientes) AS Promedio_Ing,
+     
+     (SELECT COUNT(*) AS cantidad_ingredientes
+	 FROM Recetas AS r
+	 JOIN IngredienteXRecetas AS ir ON r.IdReceta = ir.IdReceta   
+	 GROUP BY r.IdReceta) AS Cant_Ingredientes
+
+WHERE 
+	r.IdReceta = 3;
 
 
 -- 6. Mostrar las Recetas que superen el Promedio de ingredientes general (Simular Having).
-
+SELECT r.IdReceta, cantidad_ingredientes.cant_ingredientes, Promedio_Ing.prom_ing 
+FROM Recetas AS r, (SELECT AVG(cant_ingredientes) AS prom_ing
+	 FROM (SELECT COUNT(*) AS cant_ingredientes
+	 FROM Recetas AS r
+	 JOIN IngredienteXRecetas AS ir
+	 ON ir.IdReceta = r.IdReceta
+	 GROUP BY ir.IdReceta) AS recetas_con_ingredientes) AS Promedio_Ing,
+     (SELECT COUNT(*) AS cant_ingredientes
+	 FROM IngredienteXRecetas AS ir
+	 WHERE ir.IdReceta = r.IdReceta) AS cantidad_ingredientes
+WHERE 
+	(SELECT COUNT(*) AS cant_ingredientes
+	 FROM IngredienteXRecetas AS ir
+	 WHERE ir.IdReceta = r.IdReceta) >
+     (SELECT AVG(cant_ingredientes) AS prom_ing
+	 FROM (SELECT COUNT(*) AS cant_ingredientes
+	 FROM Recetas AS r
+	 JOIN IngredienteXRecetas AS ir
+	 ON ir.IdReceta = r.IdReceta
+	 GROUP BY ir.IdReceta) AS recetas_con_ingredientes);
+     

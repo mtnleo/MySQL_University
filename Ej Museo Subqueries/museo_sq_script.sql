@@ -167,17 +167,17 @@ VALUES
     (4, 20, 18, 100, 2); 
     
 -- Llenar la tabla "visitasguias" con datos ficticios, utilizando el nombre del guía como responsable
-INSERT INTO visitasguias (responsable)
+INSERT INTO visitasguias (responsable, id_guia)
 VALUES
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 1)), -- Visita Guía 1, Reserva 1, Guía 1 (IDRA, Tipo de Visita 1, Martin)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 2)), -- Visita Guía 2, Reserva 2, Guía 2 (Einstein, Tipo de Visita 2, Juana)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 3)), -- Visita Guía 3, Reserva 3, Guía 3 (CADS, Tipo de Visita 3, Sofia)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 1)), -- Visita Guía 4, Reserva 4, Guía 1 (San Alberto, Serpentario, Martin)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 2)), -- Visita Guía 5, Reserva 5, Guía 2 (San Alberto, Tipo de Visita 4, Juana)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 3)), -- Visita Guía 6, Reserva 6, Guía 3 (IDRA, Tipo de Visita 5, Sofia)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 1)), -- Visita Guía 7, Reserva 7, Guía 1 (Einstein, Tipo de Visita 6, Martin)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 2)), -- Visita Guía 8, Reserva 1, Guía 2 (IDRA, Tipo de Visita 1, Juana)
-    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 3)); -- Visita Guía 9, Reserva 2, Guía 3 (Einstein, Tipo de Visita 2, Sofia)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 1), 1), -- Visita Guía 1, Reserva 1, Guía 1 (IDRA, Tipo de Visita 1, Martin)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 2), 2), -- Visita Guía 2, Reserva 2, Guía 2 (Einstein, Tipo de Visita 2, Juana)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 3), 3), -- Visita Guía 3, Reserva 3, Guía 3 (CADS, Tipo de Visita 3, Sofia)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 1), 2), -- Visita Guía 4, Reserva 4, Guía 1 (San Alberto, Serpentario, Martin)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 2), 1), -- Visita Guía 5, Reserva 5, Guía 2 (San Alberto, Tipo de Visita 4, Juana)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 3), 2), -- Visita Guía 6, Reserva 6, Guía 3 (IDRA, Tipo de Visita 5, Sofia)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 1), 1), -- Visita Guía 7, Reserva 7, Guía 1 (Einstein, Tipo de Visita 6, Martin)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 2), 2), -- Visita Guía 8, Reserva 1, Guía 2 (IDRA, Tipo de Visita 1, Juana)
+    ((SELECT CONCAT(nombre, ' ', apellido) FROM guias WHERE id_guia = 3), 3); -- Visita Guía 9, Reserva 2, Guía 3 (Einstein, Tipo de Visita 2, Sofia)
 
     
 /********************/
@@ -274,6 +274,9 @@ INNER JOIN (SELECT Id_Tipo_Visita, count(*) as Cantidad
 -- 4. Para cada Guía, listar el nombre y obtener con una subconsulta como tabla derivada la cantidad de 
 -- Visitas en las que participó como Responsable. En caso de no haber participado en ninguna, mostrar el número cero.
 SELECT g.nombre, g.apellido, cant
-FROM guias AS g
-JOIN (SELECT v_g.id_guia, COUNT(*) AS cant
-	  FROM visitasguias AS v_g GROUP BY id_guia) cantidad ON g.id_guia = v_g.id_guia; 
+FROM guias AS g, (SELECT COUNT(v_g.id_guia) AS cant FROM visitasguias AS v_g HAVING v_g.id_guia = g.id_guia);
+
+SELECT G.nombre, ifnull(Cantidad, 0) as Cantidad
+FROM Guias G 
+LEFT JOIN (SELECT Id_Guia, count(*) as 'Cantidad'
+	FROM VisitasGuias VG WHERE Responsable = 1 GROUP BY Id_Guia) Cantidades ON G.Id_Guia = Cantidades.Id_Guia;
