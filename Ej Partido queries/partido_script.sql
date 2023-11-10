@@ -547,29 +547,6 @@ END //
 DELIMITER ;
 
 
-DELIMITER //
-CREATE PROCEDURE agregar_jugador(nombre_equipo_agregar VARCHAR(40), nombre_jugador_agregar VARCHAR(40), apellido_jugador_agregar VARCHAR(40))
-COMMENT "Agregar un jugador a la tabla"
-BEGIN
-	-- Chequeo si existe el equipo
-	IF NOT EXISTS (
-		SELECT e.nombre_equipo
-        FROM Equipos AS e
-        WHERE e.nombre_equipo LIKE nombre_equipo_agregar)
-	THEN
-		CALL ingresar_equipo(nombre_equipo_agregar);
-	END IF;
-	
-    -- No chequeo si existe el jugador porque puede que existan dos con el mismo nombre/apellido
-	INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
-    VALUES (
-    (SELECT e.id_equipo
-    FROM Equipos AS e
-    WHERE e.nombre_equipo LIKE nombre_equipo_agregar), nombre_jugador_agregar, apellido_jugador_agregar);
-END//
-DELIMITER ;
-
-
 -- DROP PROCEDURE agregar_jugador_nombre_equipo_1;
 
 CALL agregar_jugador_nombre_equipo_1("Taylor Alison", "Swift", "River Plate");
@@ -577,3 +554,63 @@ CALL agregar_jugador_nombre_equipo_1("Taylor Alison", "Swift", "River Plate");
 SELECT e.nombre_equipo, j.nombre_jugador, j.apellido
 FROM Equipos AS e, Jugadores AS j
 WHERE e.id_equipo = j.id_equipo AND e.nombre_equipo LIKE ("River Plate");
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+-- 3. Generar un Stored Procedure que permita dar de alta un equipo y sus jugadores. Devolver en un parámetro output el id del equipo.. --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE agregar_jugador_nombre_equipo_devolver_id_equipo(IN nombre_jugador_add VARCHAR(50), apellido_jugador_add VARCHAR(50), nombre_equipo_add VARCHAR(50), OUT id_equipo_add int)
+BEGIN
+-- Chequeo si existe el equipo
+	IF NOT EXISTS (
+		SELECT e.nombre_equipo
+        FROM Equipos AS e
+        WHERE e.nombre_equipo LIKE nombre_equipo_add)
+	THEN
+		CALL ingresar_equipo(nombre_equipo_add);
+        SET id_equipo_add = last_insert_id();
+	ELSE 
+		SET id_equipo_add = (
+		SELECT e.id_equipo
+        FROM Equipos AS e
+        WHERE e.nombre_equipo LIKE nombre_equipo_add);
+	END IF;
+
+	INSERT INTO Jugadores(id_equipo, nombre_jugador, apellido)
+    VALUES ((SELECT e.id_equipo
+			 FROM Equipos AS e
+             WHERE e.nombre_equipo LIKE (nombre_equipo_add)),
+             nombre_jugador_add,
+			 apellido_jugador_add
+				);
+END //
+DELIMITER ;
+
+CALL agregar_jugador_nombre_equipo_devolver_id_equipo("Travis", "Kelce", "Kansas City Chiefs", @id_equipo_kelce);
+CALL agregar_jugador_nombre_equipo_devolver_id_equipo("Male", "Bri", "Argentina FC", @id_equipo_male);
+
+SELECT e.id_equipo, e.nombre_equipo
+FROM Equipos AS e
+WHERE e.id_equipo = @id_equipo_male;
+
+-- ----------------------------------------------------------------------------------------------
+-- 4. Generar un Stored Procedure que liste los partidos de un mes y año, pasado por parametro.--
+-- ----------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE mostrar_partidos_mm_yy(anio_partido INT, mes_partido INT)
+BEGIN
+	SELECT p.fecha, e_l.nombre_equipo AS Equipo_local, e_v.nombre_equipo AS Equipo_visitante
+    FROM Partidos AS p
+    JOIN Equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
+    JOIN Equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo
+    WHERE YEAR(p.fecha) = anio_partido AND MONTH(p.fecha) = mes_partido;
+END //
+DELIMITER ;
+
+-- DROP PROCEDURE mostrar_partidos_mm_yy;
+
+CALL mostrar_partidos_mm_yy(2023, 11);
+CALL mostrar_partidos_mm_yy(2023, 10);
+CALL mostrar_partidos_mm_yy(2018, 11);
