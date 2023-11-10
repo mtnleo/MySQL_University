@@ -13,6 +13,7 @@ TIPO_MAT (cod_tipo, descrip_tipo)
 SELECT m.nom_mat
 FROM Materias AS m
 WHERE YEAR(now()) = (SELECT YEAR(c.fecha_ini_cursada) FROM Cursadas AS c WHERE c.materia = m.cod_mat);
+-- Este esta bien :)
 
 -- 2. Listar legajo y nombre de los alumnos junto con su promedio de notas , solo para estudiantes que tengan más de 10 cursadas.
 SELECT
@@ -27,8 +28,37 @@ WHERE
 	(SELECT c.leg_al, COUNT(*) AS cant
     FROM Cursadas AS c
     GROUP BY c.leg_al) > 10;
+ /*   Consigna que dio en clase
+SELECT a.nyap
+FROM Alumnos AS a
+WHERE (SELECT AVG(nota_alumno_cursadas)
+	   FROM (
+			SELECT c.nota_cursada
+            FROM Cursadas AS c
+            WHERE a.legajo_al = c.leg_al) nota_alumno_cursadas)
+		> (
+        SELECT AVG(c.nota_cursada)
+        FROM Cursadas AS c
+        WHERE c.leg_al = a.legajo_al);
 
+*/
 -- 3. Listar los nombres de todas aquellas materias que aún no han sido dictadas en la institución.
+-- 1 manera
+SELECT m.nombre
+FROM Materias AS m
+WHERE NOT EXISTS
+	(SELECT c.leg_materia
+     FROM Cursadas AS c
+     WHERE c.materia = m.cod_mat);
+     
+-- 2 manrea
+SELECT m.nom_mat
+FROM Materias AS m
+LEFT JOIN Cursadas AS c
+ON m.cod_mat = c.materia
+WHERE c.materia IS null;
+
+-- mi manera (creo q no)
 SELECT
 	m.cod_mat,
     m.nom_mat
@@ -41,22 +71,24 @@ WHERE (m.cod_mat = c.materia) AND c.fecha_ini_cursada > now();
 DELIMITER //
 CREATE PROCEDURE agregar_profesor(IN nyap VARCHAR(30), f_nac DATE, domicilio VARCHAR(40), cod_post INT, OUT legajo_prof INT)
 COMMENT "Agregar Profesor"
+BEGIN
 IF NOT EXISTS (SELECT p.nyap, p.f_nac, p.domicilio, p.cod_post
 			   FROM Profesores AS p
                WHERE p.nyap = nyap AND p.f_nac = f_nac AND p.domicilio = domicilio AND p.cod_post = cod_post)
 THEN
 	INSERT INTO Profesores (nyap, f_nac, domicilio, cod_post)
     VALUES (nyap, f_nac, domicilio, cod_post);
-    SET legajo_prof =  (SELECT p.nyap, p.f_nac, p.domicilio, p.cod_post
-						FROM Profesores AS p
-						WHERE p.nyap = nyap AND p.f_nac = f_nac AND p.domicilio = domicilio AND p.cod_post = cod_post);
+    SET legajo_prof = last_insert_id();  -- (SELECT p.legajo_prof
+										 -- FROM Profesores AS p
+										 -- WHERE p.nyap = nyap AND p.f_nac = f_nac AND p.domicilio = domicilio AND p.cod_post = cod_post);
 ELSE
 	SELECT("Ya existe un profesor con esa informacion");
-END IF//
+END IF;
+END//
 DELIMITER ;
 
 CALL agregar_profesor("Adrian Arocca", '15-3-1972', 7600, "Nuñez 91218", @legajo_prof);
-SELECT legajo_prof;
+SELECT @legajo_prof;
 
 -- 5. Mostrar las 3 materias que tienen mejor promedio en su historial y las 3 materias que tienen el peor promedio en su historial.
 -- Como salida tienen que mostrar Nombre de materia y el promedio.
@@ -67,7 +99,7 @@ WHERE m.cod_materia = c.materia
 GROUP BY m.nombre_mat
 ORDER BY AVG(c.nota_cursada) DESC
 LIMIT 3)
-UNION
+UNION ALL
 (SELECT m.nombre_mat, AVG(c.nota_cursada)
 FROM Materias AS m, Cursadas AS c
 WHERE m.cod_materia = c.materia
