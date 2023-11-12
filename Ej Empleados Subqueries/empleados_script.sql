@@ -111,17 +111,68 @@ WHERE NOT EXISTS (SELECT e.codigo_departamento FROM Empleados AS e WHERE d.codig
 
 
 -- -----------------------------------------------
-/* |||||||||||||| SUBQUERIES 2 |||||||||||||||| */
+/* |||||||||||||| SUBQUERIES REHACER |||||||||||||||| */
 -- -----------------------------------------------
 
--- 1. Calcula la suma del presupuesto de todos los departamentos.
-SELECT SUM(presupuesto) AS suma_presupuesto
-FROM departamentos;
+-- 1. Devuelve un listado con todos los empleados que tiene el departamento de Sistemas. (Sin utilizar INNER JOIN).
+SELECT e.*
+FROM Empleados AS e
+WHERE e.codigo_departamento = (SELECT codigo_departamento
+							   FROM Departamentos
+                               WHERE nombre LIKE ("Sistemas"));
+                               
+-- 2. Devuelve el nombre del departamento con mayor presupuesto y la cantidad que tiene asignada
+SELECT nombre, presupuesto
+FROM Departamentos
+WHERE presupuesto = (SELECT MAX(d.presupuesto) FROM Departamentos AS d);
 
--- 2. Calcula la media del presupuesto de todos los departamentos.
-SELECT AVG(presupuesto) AS avg_presupuesto
-FROM departamentos;
+-- 3.  Devuelve el nombre del departamento con menor presupuesto y la cantidad que tiene asignada.
+SELECT nombre, presupuesto
+FROM Departamentos
+WHERE presupuesto = (SELECT MIN(d.presupuesto) FROM Departamentos AS d);
 
--- 3. Calcula el valor mínimo del presupuesto de todos los departamentos.
-SELECT MIN(presupuesto) AS min_presupuesto
-FROM departamentos;
+-- 4. Devuelve el nombre del departamento con mayor presupuesto y la cantidad que tiene asignada. Sin hacer uso de MAX, ORDER BY ni LIMIT
+-- Usando ALL y ANY
+SELECT d.nombre, d.presupuesto
+FROM Departamentos AS d
+WHERE d.presupuesto >= ALL (SELECT d.presupuesto FROM Departamentos AS d);
+
+-- 5. Devuelve el nombre del departamento con menor presupuesto y la cantidad que tiene asignada. Sin hacer uso de MAX, ORDER BY ni LIMIT
+-- Usando ALL y ANY
+SELECT d.nombre, d.presupuesto
+FROM Departamentos AS d
+WHERE d.presupuesto <= ALL (SELECT d.presupuesto FROM Departamentos AS d);
+
+-- 6. Devuelve los nombres de los departamentos que tienen empleados asociados. (Utilizando ALL o ANY).
+SELECT nombre
+FROM Departamentos
+WHERE codigo_departamento = ANY (SELECT codigo_departamento FROM Empleados);
+
+-- 7. Devuelve los nombres de los departamentos que no tienen empleados asociados. (Utilizando ALL o ANY).
+SELECT nombre
+FROM Departamentos
+WHERE codigo_departamento <> ALL (SELECT codigo_departamento FROM Empleados);
+
+-- Con IN y NOT IN 
+
+-- 8. Devuelve los nombres de los departamentos que tienen empleados asociados. (Utilizando IN o NOT IN)
+SELECT d.nombre
+FROM Departamentos AS d
+WHERE d.codigo_departamento IN (SELECT e.codigo_departamento FROM Empleados AS e);
+
+-- 9. Devuelve los nombres de los departamentos que no tienen empleados asociados. (Utilizando IN o NOT IN)
+SELECT d.nombre
+FROM Departamentos AS d
+WHERE d.codigo_departamento NOT IN (SELECT e.codigo_departamento FROM Empleados AS e);
+
+-- Con EXISTS y NOT EXISTS
+
+-- 10.  Devuelve los nombres de los departamentos que tienen empleados asociados.
+SELECT nombre
+FROM Departamentos AS d
+WHERE EXISTS (SELECT e.codigo_departamento FROM Empleados AS e WHERE e.codigo_departamento = d.codigo_departamento);
+
+-- 11.  Devuelve los nombres de los departamentos que no tienen empleados asociados.
+SELECT nombre
+FROM Departamentos AS d
+WHERE NOT EXISTS (SELECT e.codigo_departamento FROM Empleados AS e WHERE e.codigo_departamento = d.codigo_departamento);
