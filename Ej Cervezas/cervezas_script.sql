@@ -265,7 +265,7 @@ WHERE
 
 
 -- 6. Mostrar las Recetas que superen el Promedio de ingredientes general (Simular Having).
-SELECT r.IdReceta, cantidad_ingredientes.cant_ingredientes, Promedio_Ing.prom_ing 
+SELECT DISTINCT r.IdReceta, cantidad_ingredientes.cant_ingredientes, Promedio_Ing.prom_ing 
 FROM Recetas AS r, (SELECT AVG(cant_ingredientes) AS prom_ing
 	 FROM (SELECT COUNT(*) AS cant_ingredientes
 	 FROM Recetas AS r
@@ -273,8 +273,10 @@ FROM Recetas AS r, (SELECT AVG(cant_ingredientes) AS prom_ing
 	 ON ir.IdReceta = r.IdReceta
 	 GROUP BY ir.IdReceta) AS recetas_con_ingredientes) AS Promedio_Ing,
      (SELECT COUNT(*) AS cant_ingredientes
-	 FROM IngredienteXRecetas AS ir
-	 WHERE ir.IdReceta = r.IdReceta) AS cantidad_ingredientes
+	 FROM Recetas AS r
+	 JOIN IngredienteXRecetas AS ir
+	 ON ir.IdReceta = r.IdReceta
+	 GROUP BY ir.IdReceta) AS cantidad_ingredientes
 WHERE 
 	(SELECT COUNT(*) AS cant_ingredientes
 	 FROM IngredienteXRecetas AS ir
@@ -286,3 +288,28 @@ WHERE
 	 ON ir.IdReceta = r.IdReceta
 	 GROUP BY ir.IdReceta) AS recetas_con_ingredientes);
      
+select r.IdReceta, r.NombreReceta, cantidades.cant
+from recetas r
+join (select ir.IdReceta, count(*) as cant
+		from  ingredientexrecetas ir
+        group by ir.IdReceta
+) cantidades
+on r.IdReceta = cantidades.IdReceta
+where cantidades.cant > (Select avg(CantidadIngrediente)
+from (Select  count(*) CantidadIngrediente
+from ingredientexrecetas
+group by IdReceta) promedio);
+
+
+
+SELECT r.IdReceta, r.NombreReceta, cantidades.cant
+FROM Recetas AS r
+JOIN (SELECT ir.IdReceta, COUNT(*) AS cant
+	  FROM IngredienteXRecetas AS ir
+      GROUP BY ir.IdReceta) as cantidades
+      ON cantidades.IdReceta = r.IdReceta
+WHERE
+	cantidades.cant > (Select avg(CantidadIngrediente)
+from (Select  count(*) CantidadIngrediente
+from ingredientexrecetas
+group by IdReceta) promedio);
