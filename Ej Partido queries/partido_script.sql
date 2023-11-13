@@ -614,3 +614,165 @@ DELIMITER ;
 CALL mostrar_partidos_mm_yy(2023, 11);
 CALL mostrar_partidos_mm_yy(2023, 10);
 CALL mostrar_partidos_mm_yy(2018, 11);
+
+/********************************************************************
+---------------------------------------------------------------------
+|||||||||||||||| PROCEDIMIENTOS ALMACENADOS AGAIN |||||||||||||||||||
+*********************************************************************
+---------------------------------------------------------------------*/
+
+-- 1. Generar un stored procedure que te permita agregar un equipo
+DELIMITER //
+CREATE PROCEDURE agregar_equipo_3 (IN nombre_equipo_add VARCHAR(50))
+BEGIN
+	IF NOT EXISTS
+	(SELECT e.id_equipo
+     FROM Equipos AS e
+     WHERE e.nombre_equipo LIKE nombre_equipo_add)
+     THEN
+		INSERT INTO Equipos (nombre_equipo)
+        VALUES (nombre_equipo_add);
+     ELSE   
+		SELECT ("El equipo ya existe");
+	END IF;
+END//
+DELIMITER ;
+
+CALL agregar_equipo_3 ("UTN FC");
+
+SELECT nombre_equipo FROM Equipos;
+
+-- 2. Generar un Stored Procedure que permita agregar un jugador pero se debe pasar el nombre del equipo y no el Id. 
+DELIMITER //
+CREATE PROCEDURE agregar_jugador_3 (IN nombre_jugador_add VARCHAR(50), apellido_jugador_add VARCHAR(50), nombre_equipo_add_to VARCHAR(50))
+BEGIN
+	IF EXISTS
+    (SELECT e.id_equipo
+     FROM Equipos AS e
+     WHERE e.nombre_equipo LIKE nombre_equipo_add_to)
+    THEN
+		INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
+		VALUES ((SELECT e.id_equipo
+				FROM Equipos AS e
+				WHERE e.nombre_equipo LIKE nombre_equipo_add_to)
+			   , nombre_jugador_add
+			   , apellido_jugador_add);
+	ELSE
+		INSERT INTO Equipos (nombre_equipo)
+        VALUES (nombre_equipo_add_to);
+		INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
+		VALUES ( last_insert_id()
+			   , nombre_jugador_add
+			   , apellido_jugador_add);
+	END IF;
+END //
+DELIMITER ;
+
+CALL agregar_jugador_3 ("Malena", "Brie", "UTN FC");
+CALL agregar_jugador_3 ("John", "Doe", "Cookie Dough");
+
+SELECT j.* FROM Equipos AS e, Jugadores AS j WHERE j.id_equipo = e.id_equipo AND e.nombre_equipo LIKE ("Cookie Dough");
+
+-- 3. Generar un Stored Procedure que permita dar de alta un equipo y sus jugadores. Devolver en un parámetro output el id del equipo.
+DELIMITER //
+CREATE PROCEDURE agregar_jugadores_devolver_equipo_3 (IN nombre_jugador_add VARCHAR(50), apellido_jugador_add VARCHAR(50), nombre_equipo_add_to VARCHAR(50), OUT id_equipo_agregado INT)
+BEGIN
+	IF EXISTS
+    (SELECT e.id_equipo
+     FROM Equipos AS e
+     WHERE e.nombre_equipo LIKE nombre_equipo_add_to)
+    THEN
+		INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
+		VALUES ((SELECT e.id_equipo
+				FROM Equipos AS e
+				WHERE e.nombre_equipo LIKE nombre_equipo_add_to)
+			   , nombre_jugador_add
+			   , apellido_jugador_add);
+               
+		SET id_equipo_agregado = (SELECT e.id_equipo
+				FROM Equipos AS e
+				WHERE e.nombre_equipo LIKE nombre_equipo_add_to);
+	ELSE
+		INSERT INTO Equipos (nombre_equipo)
+        VALUES (nombre_equipo_add_to);
+        
+		INSERT INTO Jugadores (id_equipo, nombre_jugador, apellido)
+		VALUES ( last_insert_id()
+			   , nombre_jugador_add
+			   , apellido_jugador_add);
+               
+		SET id_equipo_agregado = last_insert_id();
+	END IF;
+END //
+DELIMITER ;
+
+CALL agregar_jugadores_devolver_equipo_3 ("Fulano", "De Tal", "Cookie Dough", @id_equipo_agregado);
+
+SELECT j.* FROM Equipos AS e, Jugadores AS j WHERE j.id_equipo = e.id_equipo AND e.nombre_equipo LIKE ("Cookie Dough");
+SELECT (@id_equipo_agregado);
+
+CALL agregar_jugadores_devolver_equipo_3 ("John", "De La Fuente", "Margaritas FC", @id_equipo_agregado_2);
+SELECT j.* FROM Equipos AS e, Jugadores AS j WHERE j.id_equipo = e.id_equipo AND e.nombre_equipo LIKE ("Margaritas FC");
+SELECT (@id_equipo_agregado_2);
+
+-- 4. Generar un Stored Procedure que liste los partidos de un mes y año, pasado por parametro.
+DELIMITER //
+CREATE PROCEDURE show_partido_mes_año_3 (IN anio INT, mes INT)
+BEGIN
+	SELECT e_l.nombre_equipo AS "Local", e_v.nombre_equipo AS "Visitante", p.fecha
+    FROM Partidos AS p
+    JOIN Equipos AS e_l ON p.id_equipo_local = e_l.id_equipo
+    JOIN Equipos AS e_v ON p.id_equipo_visitante = e_v.id_equipo
+    WHERE MONTH(p.fecha) = mes AND YEAR(p.fecha) = anio;
+END //
+DELIMITER ;
+
+CALL show_partido_mes_año_3 (2023, 11);
+CALL show_partido_mes_año_3 (2018, 10);
+CALL show_partido_mes_año_3 (2018, 11);
+
+-- 5. Generar un Stored Procedure que devuelva el resultado de un partido pasando por
+-- parámetro los nombres de los equipos. El resultado debe ser devuelto en dos variables output
+DELIMITER //
+CREATE PROCEDURE get_resultado_partido_3(IN equipo_local_get VARCHAR(50), equipo_visitante_get VARCHAR(50), OUT puntaje_local INT, OUT puntaje_visitante INT)
+BEGIN
+	SET puntaje_local = (SELECT SUM(jep.puntos) 
+						 FROM jugadores_x_equipo_x_partido AS jep
+                         JOIN Partidos AS p ON p.id_partido = jep.id_partido
+                         JOIN Jugadores AS j ON j.id_jugador = jep.id_jugador
+                         GROUP BY jep.id_partido
+                         HAVING j.id_equipo = (SELECT e.id_equipo FROM Equipos AS e WHERE e.nombre_equipo LIKE equipo_local_get)
+                         LIMIT 1);
+	SET puntaje_visitante = (SELECT SUM(jep.puntos) 
+						 FROM jugadores_x_equipo_x_partido AS jep
+                         JOIN Partidos AS p ON p.id_partido = jep.id_partido
+                         JOIN Jugadores AS j ON j.id_jugador = jep.id_jugador
+                         GROUP BY jep.id_partido
+                         HAVING j.id_equipo = (SELECT e.id_equipo FROM Equipos AS e WHERE e.nombre_equipo LIKE equipo_visistante_get)
+                         LIMIT 1);
+
+END //
+DELIMITER ;
+
+DROP PROCEDURE get_resultado_partido_3;
+
+CALL get_resultado_partido_3 ("River Plate", "Boca Junior", @resultado_river, @resultado_boca);
+SELECT @resultado_river AS River, @resultado_boca AS Boca;
+
+-- 6. Generar un stored procedure que muestre las estadisticas promedio de los jugadores de un equipo. 
+
+DELIMITER //
+CREATE PROCEDURE show_statistics_player_team(IN nombre_equipo_show VARCHAR(50))
+BEGIN
+	SELECT j.nombre_jugador, j.apellido, AVG(jep.puntos) AS Puntos, AVG(jep.rebotes) AS Rebotes, AVG(jep.asistencias) AS Asistencias, AVG(jep.minutos) AS Minutos, AVG(jep.faltas) AS Faltas
+    FROM Equipos AS e, Jugadores AS j
+    JOIN jugadores_x_equipo_x_partido AS jep ON jep.id_jugador = j.id_jugador
+    WHERE e.id_equipo = j.id_equipo AND e.id_equipo = (SELECT eq.id_equipo FROM Equipos AS eq WHERE eq.nombre_equipo = nombre_equipo_show)
+    GROUP BY j.id_jugador;
+    
+END //
+DELIMITER ;
+
+DROP PROCEDURE show_statistics_player_team;
+
+CALL show_statistics_player_team ("River Plate");
