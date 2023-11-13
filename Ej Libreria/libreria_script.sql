@@ -182,38 +182,85 @@ WHERE l.costo > (SELECT AVG(costo) FROM Libros);
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 -- a. Que inserte información en la tabla Clientes. Ayuda (recibe parámetros de entrada).
+DELIMITER //
+CREATE PROCEDURE insertar_cliente (IN cli_id_add INT(11), nombres_add VARCHAR(100), apellido_add VARCHAR(100), direccion_add VARCHAR(300), email_add VARCHAR(100))
+BEGIN
+	IF NOT EXISTS
+		(SELECT cli_id 
+         FROM Clientes
+         WHERE cli_id = cli_id_add)    
+    THEN
+		INSERT INTO CLIENTES (CLI_ID, NOMBRES, APELLIDO, DIRECCION, EMAIL) VALUES (cli_id_add, nombres_add, apellido_add, direccion_add, email_add);
+    ELSE
+		SELECT("Ya existe un cliente con esa ID");
+	END IF;
+END //
+DELIMITER ;
 
-
-
+CALL insertar_cliente (02239, "Martin", "Leonardi", "Cornelia Street 2382", "mtnleo@mail.com");
+SELECT c.* FROM Clientes AS c WHERE c.nombres LIKE "Martin";
 
 -- b. Que actualice el nombre de un Cliente. Ayuda (recibe dos parámetros, número de cliente de quien se va a actualizar y el nuevo nombre).
+DELIMITER //
+CREATE PROCEDURE actualizar_nombre_cliente (IN cli_id_modificar INT, nuevo_nombre VARCHAR(100))
+BEGIN
+	UPDATE Clientes
+    SET nombres = nuevo_nombre
+    WHERE cli_id = cli_id_modificar;
+END //
+DELIMITER ;
 
-
-
-
-
-
+CALL actualizar_nombre_cliente (1, "Thomas");
+SELECT c.* FROM Clientes AS c ORDER BY cli_id ASC;
 
 -- c. Que elimine un Cliente. Ayuda (recibe un parámetro, número de cliente de quien se va a eliminar).
+DELIMITER //
+CREATE PROCEDURE eliminar_cliente (IN id_cli_eliminar INT)
+BEGIN
+	DELETE FROM Clientes
+    WHERE cli_id = id_cli_eliminar;
+    
+    DELETE FROM VENTAS
+	WHERE CLI_ID = p_CLI_ID;
+END //
+DELIMITER ;
 
+DROP PROCEDURE eliminar_cliente;
 
+CALL eliminar_cliente (3);
+SELECT c.* FROM Clientes c;
 
-
--- d.	Crear un procedimiento almacenado que registre una nueva venta. Crea un procedimiento almacenado llamado RegistrarVenta
+-- d. Crear un procedimiento almacenado que registre una nueva venta. Crea un procedimiento almacenado llamado RegistrarVenta
 -- que reciba los siguientes parámetros de entrada: CLI_ID (identificador del cliente que realiza la compra), LIBRO_ID (identificador del libro vendido),
 -- CANTIDAD (cantidad de libros vendidos) y PRECIO_UNITARIO (precio unitario de cada libro). El procedimiento debe
 -- insertar un nuevo registro en la tabla VENTAS con la información proporcionada. Además, si la cantidad vendida es mayor a 5, aplicará un descuento del 10% al precio total de la venta.
+DELIMITER //
+CREATE PROCEDURE registrar_venta (IN cli_id_add INT, IN libro_id_add INT, IN cantidad_add INT, IN precio_unitario_add INT)
+BEGIN
+	IF (cantidad_add > 5) THEN
+		INSERT INTO Ventas (libro_id, cli_id, cantidad, precio, fecha_compra)
+        VALUES (cli_id_add, libro_id_add, cantidad_add, precio_unitario_add * .9, TIMESTAMP(now()));
+    ELSE
+		INSERT INTO Ventas (libro_id, cli_id, cantidad, precio, fecha_compra)
+        VALUES (cli_id_add, libro_id_add, cantidad_add, precio_unitario_add, TIMESTAMP(now()));
+	END IF;
+END //
+DELIMITER ;
 
+DROP PROCEDURE registrar_venta;
 
+CALL registrar_venta (80024, 00001, 6, 10); -- descuento aplicado
+CALL registrar_venta (80022, 00002, 1, 71.23); -- descuento no aplicado
 
+-- mostrar las ultimas 2 ventas
+SELECT v.* FROM Ventas v ORDER BY v.venta_id DESC LIMIT 2;
 
-
--- e.	Crea un procedimiento almacenado llamado ActualizarDireccionCliente que reciba dos parámetros de entrada: CLI_ID (identificador del cliente cuya dirección se actualizará)
+-- e. Crea un procedimiento almacenado llamado ActualizarDireccionCliente que reciba dos parámetros de entrada: CLI_ID (identificador del cliente cuya dirección se actualizará)
 -- y NUEVA_DIRECCION (la nueva dirección que se asignará al cliente). El procedimiento debe actualizar la dirección del cliente en la tabla CLIENTES.
 
 
 
--- f.	Crea un procedimiento almacenado llamado EliminarClienteYVentas que reciba un parámetro de entrada: CLI_ID (identificador del cliente que se eliminará).
+-- f. Crea un procedimiento almacenado llamado EliminarClienteYVentas que reciba un parámetro de entrada: CLI_ID (identificador del cliente que se eliminará).
 -- El procedimiento debe eliminar al cliente de la tabla CLIENTES y todas sus ventas asociadas en la tabla VENTAS.
 
 
