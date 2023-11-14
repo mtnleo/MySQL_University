@@ -221,7 +221,7 @@ BEGIN
     WHERE cli_id = id_cli_eliminar;
     
     DELETE FROM VENTAS
-	WHERE CLI_ID = p_CLI_ID;
+	WHERE CLI_ID = id_cli_eliminar;
 END //
 DELIMITER ;
 
@@ -257,17 +257,79 @@ SELECT v.* FROM Ventas v ORDER BY v.venta_id DESC LIMIT 2;
 
 -- e. Crea un procedimiento almacenado llamado ActualizarDireccionCliente que reciba dos parámetros de entrada: CLI_ID (identificador del cliente cuya dirección se actualizará)
 -- y NUEVA_DIRECCION (la nueva dirección que se asignará al cliente). El procedimiento debe actualizar la dirección del cliente en la tabla CLIENTES.
+DELIMITER //
+CREATE PROCEDURE ActualizarDireccionCliente (IN cli_id_add INT, IN nueva_direccion VARCHAR(300))
+BEGIN
+	UPDATE Clientes 
+    SET direccion = nueva_direccion
+    WHERE cli_id = cli_id_add;
+END //
+DELIMITER ;
 
+CALL ActualizarDireccionCliente (1, "13th Avenue 1331");
 
+SELECT c.* FROM Clientes AS c WHERE cli_id = 1;
 
 -- f. Crea un procedimiento almacenado llamado EliminarClienteYVentas que reciba un parámetro de entrada: CLI_ID (identificador del cliente que se eliminará).
 -- El procedimiento debe eliminar al cliente de la tabla CLIENTES y todas sus ventas asociadas en la tabla VENTAS.
+DELIMITER //
+CREATE PROCEDURE EliminarClienteYVentas (IN cli_id_rm INT)
+BEGIN
+	IF EXISTS 
+		(SELECT c.cli_id
+         FROM Clientes AS c
+         WHERE cli_id = cli_id_rm)
+    THEN
+		DELETE FROM Clientes
+        WHERE cli_id = cli_id_rm;
+        
+        DELETE FROM Ventas
+        WHERE cli_id = cli_id_rm;
+    ELSE
+		SELECT ("No existe el cliente proporcionado");
+	END IF;
+END //
+DELIMITER ;
 
+SELECT DISTINCT c.*, v.* FROM Clientes AS c JOIN Ventas AS v ON c.cli_id = v.cli_id;
 
+-- eliminar a Sean O'Connell
+CALL EliminarClienteYVentas (9);
 
 -- g. Crear un sp InsertarClientesDePrueba que inserte una cantidad especificada de clientes de prueba en la tabla CLIENTES. La cantidad se pasará como parámetro.
+DELIMITER //
+CREATE PROCEDURE InsertarClientesDePrueba(IN cant_clientes_add INT)
+BEGIN
+	DECLARE i INT DEFAULT 1;
+    WHILE i <= cant_clientes_add DO
+		INSERT INTO CLIENTES (CLI_ID, NOMBRES, APELLIDO, DIRECCION, EMAIL)
+		VALUES (2000 + i, 'Cliente' + CAST(i AS CHAR), 'Apellido' + CAST(i AS CHAR), 'Dirección' + CAST(i AS CHAR), 'cliente' + CAST(i AS CHAR) + '@ejemplo.com');
+    
+		SET i = i + 1;
+    END WHILE;
+END //
+DELIMITER ;
+
+DROP PROCEDURE InsertarClientesDePrueba;
 
 
-
-
+CALL InsertarClientesDePrueba(3);
+SELECT c.* FROM Clientes c;
 -- h. Crear el sp RealizarCompraDePrueba el cual reciba los parámetros necesarios (4 en total), para simular una compra y a partir de ellos, registrar la venta en la tabla VENTAS.
+DELIMITER //
+CREATE PROCEDURE RealizarCompraDePrueba(IN libro_id_add INT, IN cli_id_add INT, IN cantidad_add INT)
+BEGIN
+	INSERT INTO Ventas (libro_id, cli_id, cantidad, precio, fecha_compra)
+    VALUES (libro_id_add, cli_id_add, cantidad_add, 
+			(SELECT l.costo
+             FROM Libros AS l
+             WHERE l.libro_id = libro_id_add) * cantidad_add, TIMESTAMP(NOW()));
+
+END //
+DELIMITER ;
+
+SELECT v.* FROM Ventas AS v ORDER BY v.fecha_compra DESC;
+SELECT costo FROM Libros WHERE libro_id = 80003; -- $8.99
+SELECT * FROM clientes WHERE cli_id = 19;
+
+CALL RealizarCompraDePrueba(80003, 19, 3)
