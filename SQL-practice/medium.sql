@@ -130,3 +130,29 @@ FROM admissions AS a
 JOIN doctors AS d 
 ON d.doctor_id = a.attending_doctor_id
 group by d.doctor_id
+
+/*Display the total amount of patients for each province. Order by descending.*/
+SELECT COUNT(*) AS amount_patients, province_name
+FROM province_names INNER JOIN patients
+ON province_names.province_id = patients.province_id
+group by province_name
+ORDER BY amount_patients DESC
+
+/*For every admission, display de patient's full name, thei admission diagnosis, and their doctor's full name who diagnosed their problem*/
+SELECT 
+	CONCAT(p.first_name, ' ', p.last_name) AS patient_full_name,
+    a.diagnosis,
+    CONCAT(d.first_name, ' ', d.last_name) AS patient_full_name
+FROM patients AS p INNER JOIN admissions AS a 
+ON p.patient_id = a.patient_id
+INNER JOIN doctors AS d 
+ON d.doctor_id = a.attending_doctor_id
+
+/*display the first name, last name and number of duplicate patients based on their first name and last name.
+Ex: A patient with an identical name can be considered a duplicate.*/
+SELECT first_name, last_name, COUNT(*) AS num_of_duplicate
+FROM patients
+GROUP BY first_name, last_name
+HAVING num_of_duplicate > 1
+
+/**/
