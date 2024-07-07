@@ -100,3 +100,33 @@ SELECT
  	patients
  WHERE
  	last_name LIKE 'Maroni'
+
+  /*Show all of the days of the month (1-31) and how many admission_dates occurred on that day. Sort by the day with most admissions to least admissions.*/
+  SELECT DAY(admission_date), COUNT(admission_date) AS admission_count FROM admissions
+  group by DAY(admission_date)
+  order by admission_count DESC
+
+/*Show all columns for patient_id 542's most recent admission_date.*/
+SELECT * FROM admissions
+WHERE patient_id = 542
+ORDER BY admission_date DESC
+LIMIT 1 
+
+/*Show first_name, last_name, and the total number of admissions attended for each doctor.
+Every admission has been attended by a doctor.*/
+SELECT 
+	first_name, last_name, COUNT(admissions.patient_id)
+FROM doctors
+JOIN admissions ON admissions.attending_doctor_id = doctors.doctor_id
+GROUP BY doctor_id
+
+/*For each doctor, display their id, full name, and the first and last admission date they attended.*/
+SELECT 
+	d.doctor_id, 
+    concat(d.first_name, ' ', d.last_name) AS full_name,
+    MIN(a.admission_date) AS first_admission,
+    MAX(a.admission_date) AS last_admission
+FROM admissions AS a 
+JOIN doctors AS d 
+ON d.doctor_id = a.attending_doctor_id
+group by d.doctor_id
