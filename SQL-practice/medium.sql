@@ -173,3 +173,23 @@ CASE
 	WHEN gender = 'M' THEN 'MALE'
 END AS 'gender'
 FROM patients
+
+/*Show patient_id, first_name, last_name from patients whose does not have any records in the admissions table. (Their patient_id does not exist in any admissions.patient_id rows.)*/
+SELECT patient_id, first_name, last_name
+FROM patients
+WHERE patient_id NOT IN (SELECT a.patient_id FROM admissions AS a) 
+
+/*Show the province_id(s), sum of height; where the total sum of its patient's height is greater than or equal to 7,000.*/
+SELECT province_id, SUM(height) AS total_height
+FROM patients
+GROUP BY province_id
+HAVING total_height >= 7000;
+
+/*Show patient_id, attending_doctor_id, and diagnosis for admissions that match one of the two criteria:
+1. patient_id is an odd number and attending_doctor_id is either 1, 5, or 19.
+2. attending_doctor_id contains a 2 and the length of patient_id is 3 characters.*/
+SELECT patient_id, attending_doctor_id, diagnosis
+FROM admissions
+WHERE
+	(patient_id % 2 != 0 AND attending_doctor_id IN (1, 5, 19)) OR 
+    (CAST(attending_doctor_id AS varchar(10)) LIKE '%2%' AND LEN(CAST(patient_id AS varchar(10))) = 3);
