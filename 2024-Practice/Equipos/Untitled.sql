@@ -159,3 +159,148 @@ INNER JOIN jugadores_x_equipo_x_partido jxep
 ON j.id_jugador = jxep.id_jugador
 GROUP BY j.apellido
 ORDER BY AVG(jxep.puntos) DESC;
+
+-- 10 - Para cada jugador, mostrar la fecha del primer y último partido que jugó
+SELECT j.*, MIN(p.fecha) AS primer_partido, MAX(p.fecha) AS ultimo_partido
+FROM jugadores j
+INNER JOIN jugadores_x_equipo_x_partido jxep
+ON j.id_jugador = jxep.id_jugador
+INNER JOIN partidos p
+ON p.id_partido = jxep.id_partido
+GROUP BY j.id_jugador;
+
+-- 11 - Listar los equipos que tengan registrados mas de 10 jugadores
+SELECT e.nombre_equipo, COUNT(j.id_jugador) AS cant_jugadores
+FROM equipos e
+INNER JOIN jugadores j
+ON e.id_equipo = j.id_equipo
+GROUP BY e.nombre_equipo
+HAVING COUNT(j.id_jugador) > 10;
+
+-- 12 - Listar los jugadores que hayan jugado más de 5 partidos y promediado más de 10 puntos por partido. 
+SELECT j.nombre_jugador, j.apellido, SUM(jxep.id_partido) AS partidos_jugados, AVG(jxep.puntos) AS promedio_puntos
+FROM jugadores j
+INNER JOIN jugadores_x_equipo_x_partido jxep
+ON j.id_jugador = jxep.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+HAVING SUM(jxep.id_partido) > 6 AND AVG(jxep.puntos) > 5;
+
+
+
+/********************************************************************
+---------------------------------------------------------------------
+||||||||||||||||| GUIA PROCEDIMIENTOS ALMACENADOS |||||||||||||||||||
+*********************************************************************
+---------------------------------------------------------------------*/
+
+-- -----------------------------------------------------------------
+-- 1. Generar un Stored Procedure que permite ingresar un equipo. --
+-- -----------------------------------------------------------------
+DELIMITER //
+CREATE PROCEDURE spAgregarEquipo (IN nuevoNombreEquipo VARCHAR(40))
+BEGIN
+	IF NOT EXISTS (
+		SELECT nombre_equipo
+        FROM equipos
+        WHERE nombre_equipo = nuevoNombreEquipo
+        )
+	THEN
+		INSERT INTO equipos (nombre_equipo) VALUES (nuevoNombreEquipo);
+    ELSE
+		SELECT "El equipo ya existe";
+	END IF;
+END//
+DELIMITER ;
+
+
+CALL spAgregarEquipo ("Inter Miami");
+CALL spAgregarEquipo ("River Plate");
+
+-- --------------------------------------------------------------------------------------------------------------------
+-- 2. Generar un Stored Procedure que permita agregar un jugador pero se debe pasar el nombre del equipo y no el Id. --
+-- --------------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE spAgregarJugador (IN ins_nombre_equipo VARCHAR(40), IN nuevo_nombre_jugador VARCHAR(40), IN nuevo_apellido_jugador VARCHAR(40))
+COMMENT "Agregar jugador"
+BEGIN
+	IF NOT EXISTS (
+		SELECT id_equipo
+        FROM equipos
+        WHERE nombre_equipo = ins_nombre_equipo
+    ) -- no existe el equipo lo agrega
+    THEN
+		INSERT INTO equipos (nombre_equipo)
+        VALUES (ins_nombre_equipo);
+        
+        INSERT INTO jugadores (id_equipo, nombre_jugador, apellido)
+        VALUES (LAST_INSERT_ID(), nuevo_nombre_jugador, nuevo_apellido_jugador);
+    ELSE
+		INSERT INTO jugadores (id_equipo, nombre_jugador, apellido)
+        VALUES (
+			(SELECT id_equipo FROM equipos WHERE nombre_equipo = ins_nombre_equipo)
+			, nuevo_nombre_jugador, nuevo_apellido_jugador);
+	END IF;
+END //
+DELIMITER ;
+
+
+CALL agregar_jugador("River Plate", "Fernando", "Cavenaghi"); -- El equipo existe
+CALL agregar_jugador("Real Madrid", "Facundo", "Campazzo"); -- El equipo no existe
+CALL agregar_jugador("Patronato", "Julian", "Dominguez"); -- El equipo existe
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+-- 3. Generar un Stored Procedure que permita dar de alta un equipo y sus jugadores. Devolver en un parámetro output el id del equipo.. --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE spAgregarJugadorDevolverIdEquipo(IN ins_nombre_equipo VARCHAR(40), IN n_nombre_jugador VARCHAR(40), IN n_apellido_jugador VARCHAR(40), OUT idEquipo INT)
+COMMENT "Agregar un jugador y devolver ID del equipo"
+BEGIN
+	IF NOT EXISTS (
+		SELECT id_equipo
+        FROM equipos
+        WHERE nombre_equipo = ins_nombre_equipo
+	)
+    THEN
+		INSERT INTO equipos (nombre_equipo)
+        VALUES (ins_nombre_equipo);
+        
+        SET idEquipo = LAST_INSERT_ID();
+        
+        INSERT INTO jugadores (id_equipo, nombre_jugador, apellido)
+        VALUES (LAST_INSERT_ID(), n_nombre_jugador, n_apellido_jugador);
+        
+    ELSE
+		SET idEquipo = (SELECT id_equipo FROM equipos WHERE nombre_equipo = ins_nombre_equipo);
+    
+		INSERT INTO jugadores (id_equipo, nombre_jugador, apellido)
+        VALUES (
+			(SELECT id_equipo FROM equipos WHERE nombre_equipo = ins_nombre_equipo),
+			n_nombre_jugador, n_apellido_jugador);
+    END IF;
+
+END//
+DELIMITER ;
+
+CALL spAgregarJugadorDevolverIdEquipo("Real Madrid", "Facundo", "Campazzo", @idRM);
+SELECT (@idRM);
+
+-- ----------------------------------------------------------------------------------------------
+-- 4. Generar un Stored Procedure que liste los partidos de un mes y año, pasado por parametro.--
+-- ----------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE spListarPartidosMesAnio(IN mes INT, IN anio INT)
+COMMENT "Listar partidos segun mes y anio"
+BEGIN	
+	SELECT fecha, e_l.nombre_equipo AS Local, e_v.nombre_equipo AS Visitante
+    FROM partidos p
+    INNER JOIN equipos AS e_l
+    ON e_l.id_equipo = p.id_equipo_local
+    INNER JOIN equipos AS e_v
+    ON e_v.id_equipo = p.id_equipo_visitante
+    WHERE MONTH(fecha) = mes AND YEAR(fecha) = anio;
+
+END //
+DELIMITER ;
