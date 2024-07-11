@@ -190,7 +190,23 @@ WHERE l.costo > (SELECT AVG(lib.costo) FROM libros lib);
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 -- a. Que inserte información en la tabla Clientes. Ayuda (recibe parámetros de entrada).
+DELIMITER //
+CREATE PROCEDURE spInsertarInformacionCliente (IN _nombres VARCHAR(100), _apellido VARCHAR(100), _direccion VARCHAR(300), _email VARCHAR(300))
+BEGIN
+	IF NOT EXISTS (
+		SELECT cli_id
+        FROM clientes
+        WHERE nombres = _nombres AND apellido = _apellido AND _direccion = direccion)
+	THEN
+		INSERT INTO clientes (nombres, apellido, direccion, email)
+        VALUES (_nombres, _apellido, _direccion, _email);
+    ELSE
+		SELECT "El cliente ya está cargado en el sistema";
+	END IF;
+END //
+DELIMITER ;
 
+CALL spInsertarInformacionCliente ("Martin", "Leo", "Granada 4923", "mtnleo@smth.com");
 
 
 
@@ -218,16 +234,55 @@ WHERE l.costo > (SELECT AVG(lib.costo) FROM libros lib);
 
 -- e.	Crea un procedimiento almacenado llamado ActualizarDireccionCliente que reciba dos parámetros de entrada: CLI_ID (identificador del cliente cuya dirección se actualizará)
 -- y NUEVA_DIRECCION (la nueva dirección que se asignará al cliente). El procedimiento debe actualizar la dirección del cliente en la tabla CLIENTES.
-
+DELIMITER //
+CREATE PROCEDURE spActualizarDireccionCliente (IN cli_id_cambiar INT, IN nueva_direccion VARCHAR(300))
+COMMENT "Actualizar la dirección del cliente pasado por ID"
+BEGIN
+	IF EXISTS (
+		SELECT cli_id
+        FROM clientes c
+        WHERE c.cli_id = cli_id_cambiar
+        )
+	THEN
+		UPDATE clientes
+        SET direccion = nueva_direccion
+        WHERE cli_id = cli_id_cambiar;
+    ELSE
+		SELECT ("No existe el cliente pasado por ID");
+    END IF;
+END //
+DELIMITER ;
 
 
 -- f.	Crea un procedimiento almacenado llamado EliminarClienteYVentas que reciba un parámetro de entrada: CLI_ID (identificador del cliente que se eliminará).
 -- El procedimiento debe eliminar al cliente de la tabla CLIENTES y todas sus ventas asociadas en la tabla VENTAS.
+DELIMITER //
+CREATE PROCEDURE spEliminarClienteYVentas (IN cli_id_borrar INT)
+BEGIN
+	DELETE FROM clientes
+    WHERE cli_id_borrar = cli_id;
+    
+    DELETE FROM ventas
+    WHERE cli_id_borrar = cli_id;
 
+END //
+DELIMITER ;
 
 
 -- g. Crear un sp InsertarClientesDePrueba que inserte una cantidad especificada de clientes de prueba en la tabla CLIENTES. La cantidad se pasará como parámetro.
-
+DELIMITER //
+CREATE PROCEDURE spInsertarClientesDePrueba (IN cantidad INT)
+BEGIN
+	DECLARE i INT DEFAULT (0);
+    WHILE i < cantidad  DO
+    (
+		CALL spInsertarInformacionCliente (i, i, NULL, NULL);
+        SELECT i;
+        SET i = i + 1;
+    )
+    END WHILE;
+END //
+DELIMITER ;
 
 
 
