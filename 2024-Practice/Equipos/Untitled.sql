@@ -368,4 +368,26 @@ BEGIN
 	END IF;
 END //
 DELIMITER ;
-
+-- ----------------------------------------------------------------------------------------------------  --
+--  6. Generar un stored procedure que muestre las estadisticas promedio de los jugadores de un equipo.  --
+-- ----------------------------------------------------------------------------------------------------  --
+DELIMITER //
+CREATE PROCEDURE spMostrarEstadisticasJugadores(IN i_nombre_equipo VARCHAR(40))
+BEGIN
+	IF EXISTS
+		(SELECT id_equipo
+        FROM equipos
+        WHERE nombre_equipo = i_nombre_equipo)
+    THEN
+		SELECT j.nombre_jugador, j.apellido, AVG(jxep.puntos) AS prom_puntos, AVG(jxep.rebotes) AS prom_rebotes, AVG(jxep.asistencias) AS prom_asistencias, AVG(jxep.minutos) AS prom_minutos, AVG(jxep.faltas) AS prom_faltas
+        FROM jugadores j
+        INNER JOIN equipos e
+        ON e.id_equipo = j.id_equipo
+        INNER JOIN jugadores_x_equipo_x_partido jxep
+		ON jxep.id_jugador = j.id_jugador
+        GROUP BY j.nombre_jugador, j.apellido;
+    ELSE
+		SELECT "No existe tal equipo :)";
+    END IF;
+END //
+DELIMITER ;
