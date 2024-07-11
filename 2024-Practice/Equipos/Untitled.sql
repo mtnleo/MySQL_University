@@ -185,7 +185,31 @@ ON j.id_jugador = jxep.id_jugador
 GROUP BY j.nombre_jugador, j.apellido
 HAVING SUM(jxep.id_partido) > 6 AND AVG(jxep.puntos) > 5;
 
+-- 13 - Listar los jugadores que en promedio tengan más de 10 puntos , 10 asistencias y 10 rebotes por partido.
+/*INGRESAR MAS INFO PARA HACER EL HAVING CON LA INFO QUE SE PIDE*/
+SELECT j.nombre_jugador, j.apellido, AVG(jxep.puntos) AS prom_puntos, AVG(jxep.asistencias) AS prom_asistencias, AVG(jxep.rebotes) AS prom_rebotes
+FROM jugadores j
+INNER JOIN jugadores_x_equipo_x_partido jxep
+ON jxep.id_jugador = j.id_jugador
+GROUP BY j.nombre_jugador, j.apellido
+HAVING prom_puntos > 5 AND prom_asistencias > 5 AND prom_rebotes > 5;
 
+-- 14 - Dado un equipo y un partido, devolver cuantos puntos hizo cada equipo en cada uno de los partidos que jugó como local.
+SELECT e.nombre_equipo, p.fecha, SUM(jxep.puntos) AS puntos_hechos
+FROM equipos e
+INNER JOIN partidos p
+ON e.id_equipo = p.id_equipo_local
+INNER JOIN jugadores_x_equipo_x_partido jxep
+ON jxep.id_partido = p.id_partido
+GROUP BY e.nombre_equipo;
+
+-- 15 - Listar los equipos que hayan jugado como local más de 3 partidos. 
+SELECT e.nombre_equipo, COUNT(p.id_partido) AS partidos_local
+FROM equipos e
+INNER JOIN partidos p
+ON p.id_equipo_local = e.id_equipo
+GROUP BY e.nombre_equipo
+HAVING partidos_local > 3;
 
 /********************************************************************
 ---------------------------------------------------------------------
