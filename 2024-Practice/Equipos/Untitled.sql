@@ -328,3 +328,44 @@ BEGIN
 
 END //
 DELIMITER ;
+
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- 5. Generar un Stored Procedure que devuelva el resultado de un partido pasando por parámetro los nombres de los equipos. El resultado debe ser devuelto en dos variables output --
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+CREATE PROCEDURE spDevolverResultadoPartido (IN nombre_equipo_local VARCHAR(40), IN nombre_equipo_visitante VARCHAR(40), OUT resultado_local INT, OUT resultado_visitante INT)
+BEGIN
+	IF NOT EXISTS (
+		SELECT id_partido
+        FROM partidos
+        INNER JOIN equipos e_l
+        ON e_l.id_equipo = p.id_equipo_local
+        INNER JOIN equipos e_v
+        ON e_v.id_equipo = p.id_equipo_visitante
+        )
+	THEN
+		SELECT "No existe tal partido";
+	ELSE
+		SET resultado_local = (
+			SELECT SUM(jxep.puntos) AS puntos_local
+			FROM partidos
+			INNER JOIN jugadores_x_equipo_x_partido jxep
+			ON jxep.id_partido = p.id_partido
+			GROUP BY id_equipo_local
+			HAVING id_equipo_local = (SELECT e.id_equipo FROM equipos e WHERE nombre_equipo = nombre_equipo_local)
+			);
+        
+        SET resultado_visitante = (
+			SELECT SUM(jxep.puntos) AS puntos_visitante
+			FROM partidos
+			INNER JOIN jugadores_x_equipo_x_partido jxep
+			ON jxep.id_partido = p.id_partido
+			GROUP BY id_equipo_visitante
+			HAVING id_equipo_visitante = (SELECT e.id_equipo FROM equipos e WHERE nombre_equipo = nombre_equipo_visitante)
+			);
+        
+	END IF;
+END //
+DELIMITER ;
+
