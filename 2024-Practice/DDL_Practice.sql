@@ -55,3 +55,16 @@ UPDATE employees SET position = ("Director of Accounting")  WHERE id_employee = 
 ALTER TABLE departments
 ADD 
 CONSTRAINT CK_budget CHECK (budget >= 0);
+
+INSERT INTO departments (name, budget)
+VALUES ("IT", 30000), ("HR", 12000);
+
+
+
+ALTER TABLE employees
+ADD CONSTRAINT ck_hourly_wage CHECK (hourly_pay >= 15);
+
+INSERT INTO employees (name, last_name, position, hourly_pay, id_department)
+VALUES ("Samwise", "Gamgee", "Front Desk Manager", 26, 2);
+
+SELECT * FROM employees
