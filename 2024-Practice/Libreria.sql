@@ -287,3 +287,11 @@ DELIMITER ;
 
 
 -- h. Crear el sp RealizarCompraDePrueba el cual reciba los parámetros necesarios (4 en total), para simular una compra y a partir de ellos, registrar la venta en la tabla VENTAS.
+DELIMITER //
+CREATE PROCEDURE spRealizarCompraDePrueba (IN lib_id_comprado INT, IN cli_id_comprado INT, IN cantidad INT, IN precio INT)
+COMMENT "Realizar una compra"
+BEGIN
+	INSERT INTO ventas (libro_id, cli_id, cantidad, precio, fecha_compra)
+    VALUES (lib_id_comprado, cli_id_comprado, cantidad, precio, NOW());
+END //
+DELIMITER ;
