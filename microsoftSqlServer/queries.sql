@@ -16,7 +16,8 @@ JOIN (
 		INNER JOIN fmendezdb.dbo.Paciente pac ON per.id = pac.idPersona
 		) AS p ON con.idPaciente = p.idPaciente;
 
-/* 2.  Internaciones actuales
+/* 
+	2.  Internaciones actuales
 Salida:
 Nombre completo del paciente
 Fecha de ingreso
@@ -35,3 +36,38 @@ Salida:
 Nombre de la especialidad
 Cantidad de consultas */
 
+SELECT e.nombre, COUNT(c.id) AS NumeroConsultas
+FROM fmendezdb.dbo.Consulta AS c
+LEFT JOIN fmendezdb.dbo.Especialidad AS e ON e.id = c.idEspecialidad
+GROUP BY e.nombre;
+
+/* 
+	4. Médicos con cantidad de pacientes atendidos
+Salida:
+Nombre completo del médico
+Cantidad de pacientes atendidos
+ */
+ 
+SELECT p.nombre AS Nombre, p.apellido AS Apellido, COUNT(pac.id) AS PacientesAtendidos
+FROM fmendezdb.dbo.Persona p 
+JOIN fmendezdb.dbo.Empleado emp ON p.id = emp.idPersona
+INNER JOIN fmendezdb.dbo.MedicoEspecialidad me ON me.idMedico = emp.id
+INNER JOIN fmendezdb.dbo.Paciente pac ON p.id = pac.idPersona
+INNER JOIN fmendezdb.dbo.Consulta c ON (pac.id = c.idPaciente AND me.idMedico = c.idMedico)
+GROUP BY p.nombre, p.apellido;
+
+SELECT fmendezdb.dbo.V_MedicosPacientesAtendidos;
+
+
+/* 5. Habitaciones ocupadas por sector
+Salida:
+Nombre del sector
+Cantidad de habitaciones ocupadas
+ */
+
+SELECT s.nombre AS NombreSector, COUNT(h.id) AS HabitacionesOcupadas
+FROM fmendezdb.dbo.Habitacion h 
+INNER JOIN fmendezdb.dbo.Sector s ON s.id = h.idSector
+INNER JOIN fmendezdb.dbo.Ingreso i ON i.idHabitacion = h.id
+WHERE i.fechaAlta IS NULL
+GROUP BY s.nombre;
