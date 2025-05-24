@@ -125,4 +125,17 @@ LEFT JOIN fmendezdb.dbo.Ingreso i ON i.idMedicoTratante = e.id
 GROUP BY e.id, e.idPersona, e.idCargo, e.idTipoEmpleado, e.idDependencia, e.idUsuario
 HAVING  COUNT(i.id) = 0;
 
+/* 9. Habitaciones desocupadas
+Salida:
+Todos los campos de la habitación 
+Cantidad de ingresos activos (debe ser 0) */
+
+CREATE OR ALTER VIEW HabitacionesDesocupadas
+AS
+
+SELECT  h.id, h.numero, h.idSector, h.descripcion, h.capacidad, COUNT(i.idHabitacion) AS CantidadIngresosActivos
+FROM fmendezdb.dbo.Ingreso i
+JOIN fmendezdb.dbo.Habitacion h ON i.idHabitacion = h.id
+GROUP BY h.id, h.numero, h.idSector, h.descripcion, h.capacidad
+HAVING COUNT(i.idHabitacion) = 0
 
