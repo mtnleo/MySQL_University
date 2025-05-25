@@ -130,12 +130,96 @@ Salida:
 Todos los campos de la habitación 
 Cantidad de ingresos activos (debe ser 0) */
 
-CREATE OR ALTER VIEW HabitacionesDesocupadas
+CREATE OR ALTER VIEW V_HabitacionesDesocupadas
 AS
-
 SELECT  h.id, h.numero, h.idSector, h.descripcion, h.capacidad, COUNT(i.idHabitacion) AS CantidadIngresosActivos
 FROM fmendezdb.dbo.Ingreso i
 JOIN fmendezdb.dbo.Habitacion h ON i.idHabitacion = h.id
 GROUP BY h.id, h.numero, h.idSector, h.descripcion, h.capacidad
-HAVING COUNT(i.idHabitacion) = 0
+HAVING COUNT(i.idHabitacion) = 0;
 
+/*10. Especialidades sin médicos
+Salida:
+Todos los campos de la especialidad
+Cantidad de médicos (debe ser 0)*/
+
+CREATE OR ALTER VIEW V_EspecialidadesSinMedicos
+AS
+SELECT e.id, e.nombre, e.descripcion, COUNT(me.idEspecialidad)
+FROM fmendezdb.dbo.Especialidad e 
+JOIN fmendezdb.dbo.MedicoEspecialidad me ON e.id = me.idEspecialidad
+GROUP BY e.id, e.nombre, e.descripcion
+HAVING COUNT(me.idEspecialidad) = 0;
+
+/*11. Pacientes con internaciones en diferentes sectores
+Salida:
+ID del paciente
+Nombre
+Apellido */
+
+CREATE OR ALTER VIEW V_InternacionesPacientes
+AS
+SELECT p.nombre, p.apellido, pac.id, s.nombre
+FROM fmendezdb.dbo.Persona p
+INNER JOIN fmendezdb.dbo.Paciente pac ON pac.idPersona = p.id
+INNER JOIN fmendezdb.dbo.Ingreso i ON i.idPaciente = pac.id
+INNER JOIN fmendezdb.dbo.Habitacion h ON h.id = i.idHabitacion
+INNER JOIN fmendezdb.dbo.Sector s ON h.idSector = s.id
+
+/* 12. La última internación por paciente
+Salida:
+ID del ingreso
+ID del paciente
+Fecha de ingreso
+Fecha de alta */
+
+CREATE OR ALTER VIEW V_UltimaInternacionPorPaciente
+AS
+
+SELECT i.id, p.id, MAX(i.fechaIngreso), i.fechaAlta
+FROM fmendezdb.dbo.Ingreso i 
+INNER JOIN fmendezdb.dbo.Paciente p ON p.id = i.idPaciente
+GROUP BY p.id, i.id, i.fechaAlta 
+
+/* 13. Médicos con múltiples especialidades
+Salida:
+ID del médico
+Nombre
+Apellido
+Cantidad de especialidades */
+
+CREATE OR ALTER VIEW V_MedicosMultiplesEspecialidades
+AS
+
+SELECT e.id, p.nombre, p.apellido, COUNT(me.idEspecialidad) AS CantidadEspecialidades
+FROM fmendezdb.dbo.Persona p 
+INNER JOIN fmendezdb.dbo.Empleado e ON e.idPersona = p.id
+INNER JOIN fmendezdb.dbo.MedicoEspecialidad me ON e.id = me.idMedico
+GROUP BY e.id, p.nombre, p.apellido
+HAVING COUNT(me.idEspecialidad) > 1;
+
+/*  14. Ingresos por año
+Salida:
+Año
+Cantidad de ingresos */
+
+CREATE OR ALTER VIEW V_IngresosPorAnio
+AS
+
+SELECT YEAR(i.fechaIngreso), COUNT(i.id)
+FROM fmendezdb.dbo.Ingreso i
+GROUP BY YEAR(i.fechaIngreso)
+
+/* 15. Pacientes sin alta médica
+Salida:
+ID del paciente
+Nombre
+Apellido */
+
+CREATE OR ALTER VIEW V_PacientesSinAltaMedica
+AS
+SELECT pac.id, p.nombre, p.apellido
+FROM fmendezdb.dbo.Persona p
+INNER JOIN fmendezdb.dbo.Paciente pac ON p.id = pac.idPersona
+INNER JOIN fmendezdb.dbo.Ingreso i ON i.idPaciente = pac.id
+WHERE i.fechaAlta IS NULL;
